@@ -1,0 +1,11 @@
+.DS_Store
+.idea
+.vscode
+*.png
+*.svg
+*.dot
+*.pdf
+*.code-workspace
+generator
+lr/grammy/grammy
+terex/terexlang/trepl/trepl
