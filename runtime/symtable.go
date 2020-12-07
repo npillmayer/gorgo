@@ -50,6 +50,15 @@ func NewTag(nm string) *Tag {
 	return tag
 }
 
+// WithType sets the initial type of a tag. Use as
+//
+//    tag := NewTag("myTag").WithType(FloatType)
+//
+func (s *Tag) WithType(t int8) *Tag {
+	s.typ = t
+	return s
+}
+
 // String is a debug Stringer for symbols.
 func (s *Tag) String() string {
 	return fmt.Sprintf("<tag '%s'[%d]:%d>", s.Name, s.ID, s.typ)
