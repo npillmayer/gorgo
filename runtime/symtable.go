@@ -26,6 +26,7 @@ type Tag struct {
 	typ      int8
 	Sibling  *Tag // Some varibles form small trees
 	Children *Tag
+	UData    interface{} // user data
 }
 
 // Pre-defined tag types, if you want to use them.
