@@ -3,7 +3,7 @@ package terexlang
 /*
 BSD License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Copyright (c) 2019–21, Norbert Pillmayer
 
 All rights reserved.
 

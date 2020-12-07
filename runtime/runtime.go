@@ -82,29 +82,32 @@ import (
 	"github.com/npillmayer/schuko/tracing"
 )
 
-// Configurable trace; tracing to the SyntaxTracer
+// T traces to the global syntax tracer
 func T() tracing.Trace {
 	return gtrace.SyntaxTracer
 }
 
-// A type implementing a runtime environment for an interpreter
+// Runtime is a type implementing a runtime environment for an interpreter
 type Runtime struct {
 	ScopeTree     *ScopeTree        // collect scopes
 	MemFrameStack *MemoryFrameStack // runtime stack of memory frames
-	ExprStack     *ExprStack        // evaluate arithmetic expressions
+	//ExprStack     *ExprStack        // evaluate arithmetic expressions
 }
 
-// Construct a new runtime environment, initialized. Accepts a symbol creator for
+// NewRuntimeEnvironment constructs
+// a new runtime environment, initialized. Accepts a symbol creator for
 // variable declarations to be used within this runtime environment.
 //
-func NewRuntimeEnvironment(withDeclarations func(string) Symbol) *Runtime {
+func NewRuntimeEnvironment(withDeclarations func(string) *Tag) *Runtime {
 	rt := &Runtime{}
-	rt.ScopeTree = new(ScopeTree)                            // scopes for groups and functions
-	rt.ScopeTree.PushNewScope("globals", withDeclarations)   // push global scope first
+	rt.ScopeTree = new(ScopeTree) // scopes for groups and functions
+	//rt.ScopeTree.PushNewScope("globals", withDeclarations)   // push global scope first
+	rt.ScopeTree.PushNewScope("globals")                     // push global scope first
 	rt.MemFrameStack = new(MemoryFrameStack)                 // initialize memory frame stack
 	mf := rt.MemFrameStack.PushNewMemoryFrame("global", nil) // global memory
 	mf.Scope = rt.ScopeTree.Globals()                        // connect the global frame with the global scope
-	rt.MemFrameStack.Globals().SymbolTable = NewSymbolTable(withDeclarations)
-	rt.ExprStack = NewExprStack()
+	rt.MemFrameStack.Globals().SymbolTable = NewSymbolTable()
+	//rt.MemFrameStack.Globals().SymbolTable = NewSymbolTable(withDeclarations)
+	//rt.ExprStack = NewExprStack()
 	return rt
 }

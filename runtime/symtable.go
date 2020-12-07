@@ -11,7 +11,7 @@ import (
 // --- Tags -------------------------------------------------------
 
 // Every symbol has a serial ID.
-var serialID int = 1 // must not start with 0 !
+var serialID int32 = 1 // must not start with 0 !
 
 // Tag is the symbols type to be stored into symbol tables. It may be a
 // little surprising this type is not called 'Symbol', but I prefer the
@@ -22,7 +22,7 @@ var serialID int = 1 // must not start with 0 !
 //
 type Tag struct {
 	Name     string
-	Id       int32
+	ID       int32
 	typ      int8
 	Sibling  *Tag // Some varibles form small trees
 	Children *Tag
@@ -41,23 +41,22 @@ const (
 )
 
 // NewTag creates a new tag, with a new ID.
-func NewTag(nm string, typ int) Symbol {
-	serialID += 1
+func NewTag(nm string) *Tag {
+	serialID++
 	var tag = &Tag{
 		Name: nm,
-		Id:   serialID,
-		typ:  typ,
+		ID:   serialID,
 	}
 	return tag
 }
 
 // String is a debug Stringer for symbols.
 func (s *Tag) String() string {
-	return fmt.Sprintf("<tag '%s'[%d]:%s>", s.Name, s.Id, s.typ)
+	return fmt.Sprintf("<tag '%s'[%d]:%d>", s.Name, s.ID, s.typ)
 }
 
 // Type gets the tag's type.
-func (s *Tag) Type() int {
+func (s *Tag) Type() int8 {
 	return s.typ
 }
 
@@ -70,7 +69,7 @@ func (s *Tag) AppendChild(ch *Tag) *Tag {
 		s.Children = ch
 	} else {
 		next := s.Children
-		for ; next.GetSibling() != nil; next = next.GetSibling() {
+		for ; next.Sibling != nil; next = next.Sibling {
 			// do nothing
 		}
 		next.Sibling = ch
@@ -81,13 +80,13 @@ func (s *Tag) AppendChild(ch *Tag) *Tag {
 
 // === Symbol Tables =========================================================
 
-// Symbol tables to store tags (map-like semantics).
+// SymbolTable is a symbol table to store tags (map-like semantics).
 type SymbolTable struct {
 	Table     map[string]*Tag
 	createTag func(string) *Tag
 }
 
-// Create an empty symbol table.
+// NewSymbolTable creates an empty symbol table.
 //
 func NewSymbolTable() *SymbolTable {
 	var symtab = SymbolTable{
@@ -113,7 +112,7 @@ func (t *SymbolTable) ResolveTag(tagname string) *Tag {
 // Returns the tag and a flag, signalling wether the tag
 // has already been present.
 //
-func (t *SymbolTable) ResolveOrDefineTag(tagname string) (Symbol, bool) {
+func (t *SymbolTable) ResolveOrDefineTag(tagname string) (*Tag, bool) {
 	if len(tagname) == 0 {
 		return nil, false
 	}
@@ -136,23 +135,23 @@ func (t *SymbolTable) DefineTag(tagname string) (*Tag, *Tag) {
 		return nil, nil
 	}
 	tag := t.createTag(tagname)
-	old := t.InsertTag(sym)
+	old := t.InsertTag(tag)
 	return tag, old
 }
 
-// Insert a pre-created symbol.
+// InsertTag inserts a pre-created symbol.
 func (t *SymbolTable) InsertTag(tag *Tag) *Tag {
 	old := t.ResolveTag(tag.Name)
-	t.Table[tag.Name] = sym
+	t.Table[tag.Name] = tag
 	return old
 }
 
-// Count the tags in a symbol table.
+// Size counts the tags in a symbol table.
 func (t *SymbolTable) Size() int {
 	return len(t.Table)
 }
 
-// Iterate over each tags in the table, executing a mapper function.
+// Each iterates over each tag in the table, executing a mapper function.
 func (t *SymbolTable) Each(mapper func(string, *Tag)) {
 	for k, v := range t.Table {
 		mapper(k, v)
@@ -161,7 +160,7 @@ func (t *SymbolTable) Each(mapper func(string, *Tag)) {
 
 // === Scopes ================================================================
 
-// A named scope, which may contain symbol definitions. Scopes link back to a
+// Scope is a named scope, which may contain symbol definitions. Scopes link back to a
 // parent scope, forming a tree.
 type Scope struct {
 	Name   string
@@ -170,11 +169,11 @@ type Scope struct {
 }
 
 // NewScope creates a new scope.
-func NewScope(nm string, parent *Scope, symcreator func(string) Symbol) *Scope {
+func NewScope(nm string, parent *Scope) *Scope {
 	sc := &Scope{
 		Name:   nm,
 		Parent: parent,
-		symtab: NewSymbolTable(symcreator),
+		symtab: NewSymbolTable(),
 	}
 	return sc
 }
@@ -184,23 +183,22 @@ func (s *Scope) String() string {
 	return fmt.Sprintf("<scope %s>", s.Name)
 }
 
-/* Return the symbol table of a scope.
- */
+// Tags returns the symbol table of a scope.
 func (s *Scope) Tags() *SymbolTable {
 	return s.symtab
 }
 
-// Define a tag in the scope. Returns the new tag and the previously
+// DefineTag defines a tag in the scope. Returns the new tag and the previously
 // stored tag under this key, if any.
 //
-func (s *Scope) DefineTag(tagname string) (Symbol, Symbol) {
+func (s *Scope) DefineTag(tagname string) (*Tag, *Tag) {
 	return s.symtab.DefineTag(tagname)
 }
 
-// Find a tag. Returns the tag (or nil) and a scope. The scope is
+// ResolveTag finds a tag. Returns the tag (or nil) and a scope. The scope is
 // the scope (of a scope-tree-path) the tag was found in.
 //
-func (s *Scope) ResolveTag(tagname string) (Symbol, *Scope) {
+func (s *Scope) ResolveTag(tagname string) (*Tag, *Scope) {
 	tag := s.symtab.ResolveTag(tagname)
 	if tag != nil {
 		return tag, s
@@ -243,9 +241,9 @@ func (scst *ScopeTree) Globals() *Scope {
 
 // PushNewScope pushes a scope onto the stack of scopes. A scope is constructed, including a symbol table
 // for variable declarations.
-func (scst *ScopeTree) PushNewScope(nm string, symcreator func(string) Symbol) *Scope {
+func (scst *ScopeTree) PushNewScope(nm string) *Scope {
 	scp := scst.ScopeTOS
-	newsc := NewScope(nm, scp, symcreator)
+	newsc := NewScope(nm, scp)
 	if scp == nil { // the new scope is the global scope
 		scst.ScopeBase = newsc // make new scope anchor
 	}

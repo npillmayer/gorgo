@@ -5,14 +5,14 @@ import (
 )
 
 func TestNewSymTab(t *testing.T) {
-	symtab := NewSymbolTable(nil)
+	symtab := NewSymbolTable()
 	if symtab == nil {
 		t.Error("no symbol table created")
 	}
 }
 
 func TestNewSymbol(t *testing.T) {
-	symtab := NewSymbolTable(nil)
+	symtab := NewSymbolTable()
 	sym, _ := symtab.DefineTag("new-sym")
 	if sym == nil {
 		t.Error("no symbol created for table")
@@ -20,7 +20,7 @@ func TestNewSymbol(t *testing.T) {
 }
 
 func TestTwoSymbolsDistinctId(t *testing.T) {
-	symtab := NewSymbolTable(nil)
+	symtab := NewSymbolTable()
 	sym1, _ := symtab.DefineTag("new-sym1")
 	sym2, _ := symtab.DefineTag("new-sym2")
 	if sym1 == sym2 {
@@ -29,23 +29,23 @@ func TestTwoSymbolsDistinctId(t *testing.T) {
 }
 
 func TestResolveTag(t *testing.T) {
-	symtab := NewSymbolTable(nil)
+	symtab := NewSymbolTable()
 	sym, _ := symtab.DefineTag("new-sym")
-	if s := symtab.ResolveTag(sym.GetName()); s == nil {
+	if s := symtab.ResolveTag(sym.Name); s == nil {
 		t.Error("cannot find stored symbol in table")
 	}
 }
 
 func TestResolveOrDefineTag(t *testing.T) {
-	symtab := NewSymbolTable(nil)
+	symtab := NewSymbolTable()
 	sym, _ := symtab.DefineTag("new-sym")
-	if _, found := symtab.ResolveOrDefineTag(sym.GetName()); !found {
+	if _, found := symtab.ResolveOrDefineTag(sym.Name); !found {
 		t.Error("cannot find stored symbol in table")
 	}
 }
 
 func TestDefineTag(t *testing.T) {
-	symtab := NewSymbolTable(nil)
+	symtab := NewSymbolTable()
 	sym, _ := symtab.DefineTag("new-sym")
 	if _, old := symtab.DefineTag("new-sym"); old != sym {
 		t.Error("symbol should have been replaced")
@@ -53,11 +53,11 @@ func TestDefineTag(t *testing.T) {
 }
 
 func TestScopeUpsearch(t *testing.T) {
-	scopep := NewScope("parent", nil, nil)
-	scope := NewScope("current", scopep, nil)
+	scopep := NewScope("parent", nil)
+	scope := NewScope("current", scopep)
 	scopep.DefineTag("new-sym")
 	if sym, _ := scope.ResolveTag("new-sym"); sym != nil {
-		t.Logf("found symbol '%s' in parent scope, ok\n", sym.GetName())
+		t.Logf("found symbol '%s' in parent scope, ok\n", sym.Name)
 	} else {
 		t.Fail()
 	}
@@ -69,7 +69,7 @@ func TestAddChild(t *testing.T) {
 	ch2 := NewTag("child-sym2")
 	sym.AppendChild(ch1)
 	sym.AppendChild(ch2)
-	if sym.Children.Name() != "child-sym1" {
+	if sym.Children.Name != "child-sym1" {
 		t.Fail()
 	}
 }
