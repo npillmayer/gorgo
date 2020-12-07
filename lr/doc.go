@@ -33,14 +33,14 @@ This results in the following trivial grammar:
 Static Grammar Analysis
 
 After the grammar is complete, it has to be analysed. For this end, the
-grammar is subjected to a GrammarAnalysis object, which computes FIRST and
+grammar is subjected to an LRAnalysis object, which computes FIRST and
 FOLLOW sets for the grammar and determines all epsilon-derivable rules.
 
 Although FIRST and FOLLOW-sets are mainly intended to be used for internal
 purposes of constructing the parser tables, methods for getting FIRST(N)
 and FOLLOW(N) of non-terminals are defined to be public.
 
-    ga := lr.NewGrammarAnalysis(g)  // analyser for grammar above
+    ga := lr.Analysis(g)  // analyser for grammar above
     ga.Grammar().EachNonTerminal(
         func(name string, N Symbol) interface{} {             // ad-hoc mapper function
             fmt.Printf("FIRST(%s) = %v", name, ga.First(N))   // get FIRST-set for N
