@@ -44,7 +44,7 @@ import (
 
 // The tokens representing literal one-char lexemes
 var literals = []string{"'", "(", ")", "[", "]"}
-var ops = []string{"+", "-", "*", "/", "=", "=", "!", "%", "&", "?",
+var ops = []string{"+", "-", "*", "/", "=", "!", "%", "&", "?",
 	"<", ">", "≤", "≥", "≠", ".", ",", "^"}
 
 // The keyword tokens
