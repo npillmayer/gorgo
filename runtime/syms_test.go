@@ -17,6 +17,10 @@ func TestNewSymbol(t *testing.T) {
 	if sym == nil {
 		t.Error("no symbol created for table")
 	}
+	sym.UData = 5
+	if sym.UData != 5 {
+		t.Errorf("UData does not work")
+	}
 }
 
 func TestTwoSymbolsDistinctId(t *testing.T) {
