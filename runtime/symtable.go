@@ -24,7 +24,7 @@ type Tag struct {
 	Name     string
 	ID       int32
 	typ      int8
-	Sibling  *Tag // Some varibles form small trees
+	Sibling  *Tag // Some variables form small trees
 	Children *Tag
 	UData    interface{} // user data
 }
