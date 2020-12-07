@@ -59,6 +59,11 @@ func (s *Tag) WithType(t int8) *Tag {
 	return s
 }
 
+// ChangeType sets the type of a tag.
+func (s *Tag) ChangeType(t int8) {
+	s.typ = t
+}
+
 // String is a debug Stringer for symbols.
 func (s *Tag) String() string {
 	return fmt.Sprintf("<tag '%s'[%d]:%d>", s.Name, s.ID, s.typ)
