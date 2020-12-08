@@ -12,7 +12,7 @@ import (
 const (
 	EpsilonType = 0
 	EOFType     = -1    // pseudo terminal token for end of input
-	NonTermType = -1000 // IDs of non-terminals MUST be in { -2 … -999 }
+	NonTermType = -1000 // IDs of terminals MUST be in { -2 … -999 }
 )
 
 // Serial no. for lrSymbol IDs
