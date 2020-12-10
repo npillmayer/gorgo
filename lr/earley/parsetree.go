@@ -1,6 +1,8 @@
 package earley
 
 import (
+	"fmt"
+
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 	"github.com/npillmayer/gorgo/lr/sppf"
@@ -48,7 +50,7 @@ func (p *Parser) WalkDerivation(listener Listener) *RuleNode {
 	for S.Next() {
 		item := S.Item().(lr.Item)
 		if item.PeekSymbol() == nil && item.Rule().LHS == p.ga.Grammar().Rule(0).LHS {
-			root = p.walk(item, p.sc, listener, 0)
+			root = p.walk(item, p.sc, ruleset{}, listener, 0)
 		}
 	}
 	T().Debugf("========================================")
@@ -69,7 +71,9 @@ A good overview of how to construct a parse forest from Earley-items may be foun
 Even more practical, a great tutorial by Loup Vaillant
 (http://loup-vaillant.fr/tutorials/earley-parsing/parser)
 provides a very approachable summary of how to create a parse forest from an Earley-parse.
-Here is a relevant excerpt:
+As of Dec 2020, the page seems to be down, but here is a relevant excerpt:
+
+-----------------------------------------
 
 Imagine we have an item like this ('a', 'b', and 'c' are symbols, and 'i' is an integer):
 
@@ -108,15 +112,28 @@ either a completed state, or a successful scan. This has several implications:
 
 The problem now is to search for those states, and determine the value of (x).
 Given how Earley items are stored in the state sets, we need to start at the end.
+
+-----------------------------------------
+
+In fact, things are a bit more complicated (as explained in Grune et al.), but
+the general drift is well explained.
+
+TODO: pull out handling of trys to use it for all r ∈ R, even if |R| = 1
 */
-func (p *Parser) walk(item lr.Item, pos uint64, listener Listener, level int) *RuleNode {
-	rhs := reverse(item.Rule().RHS()) // we iterate over RHS symbols of item
-	l := len(rhs)
+func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
+	listener Listener, level int) *RuleNode {
+	//
+	rhs := reverse(item.Rule().RHS()) // we iterate backwards over RHS symbols of item
 	T().Debugf("Walk from item=%s (%d…%d)", item, item.Origin, pos)
 	extent := lr.Span{item.Origin, pos}
-	ruleNodes := make([]*RuleNode, len(rhs)) // we will collect children nodes
+	l := len(rhs)
+	ruleNodes := make([]*RuleNode, l) // we will collect |RHS| children nodes
 	end := pos
+	leftmost := false
 	for n, B := range rhs {
+		if n+1 == l { // this is the leftmost symbol in RHS ⇒ must match at item.Origin
+			leftmost = true
+		}
 		T().Debugf("Next symbol in rev(RHS) is %s", B)
 		if B.IsTerminal() { // collect a terminal node
 			T().Infof("Tree node    %d: %s", pos-1, B)
@@ -142,27 +159,33 @@ func (p *Parser) walk(item lr.Item, pos uint64, listener Listener, level int) *R
 		T().Debugf("R=%s", itemSetString(R))
 		switch R.Size() {
 		case 0: // cannot happen
-			panic("predecessor for item missing")
+			panic(fmt.Sprintf("predecessor for item missing, parse is stuck: %v", item))
 		case 1: // non-ambiguous
 			child := R.First().(lr.Item)
-			ruleNodes[l-n-1] = p.walk(child, pos, listener, level+1)
+			if leftmost && child.Origin != item.Origin {
+				panic(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", child))
+			}
+			ruleNodes[l-n-1] = p.walk(child, pos, try(l, trys), listener, level+1)
 			pos = child.Origin // k
-		default: // ambiguous: resolve by longest rule first, then by rule number
-			/* TODO
-			Earley parse-tree generation: // ambiguous: resolve by longest rule first,
-			then by rule number
-
-			Let clients decide this via option. The implemented default works for many cases,
-			but automatically prefers a right-derivation. This may not be what clients want,
-			e.g. for left-associative operators.
-			*/
+		default: // ambiguous: resolve by longest rule first, then by lower rule number
 			var longest lr.Item
 			R.IterateOnce()
 			for R.Next() {
-				rule := R.Item().(lr.Item)
+				rule := R.Item().(lr.Item) // 'rule' is a completed item [B→…A•, k]
 				// interval(longest) < interval(item) ?
-				// avoid looping with parent-rule = child-rule
-				if item.Origin <= rule.Origin && !(item.Origin == rule.Origin && pos == end) {
+				T().Errorf("longest = %v, pos = %v, end = %v", longest, pos, end)
+				T().Errorf("   rule = %v, item = %v, origin = %v", rule, item.Origin, rule.Origin)
+				// avoid looping with ancestor-rule = current rule
+				if trys.contains(rule.Rule()) { // we tried this rule somewhere up in the derivation walk
+					continue // skip this rule
+				}
+				//if item.Origin <= rule.Origin && !(item.Origin == rule.Origin && pos == end) {
+				if item.Origin <= rule.Origin {
+					// Now: Resolve by longest rule first, then by lower rule number.
+					// TODO: Let clients decide via option? The default now works for many cases,
+					// but automatically prefers a right-derivation. This may not be what clients want,
+					// e.g. for left-associative operators.
+					T().Errorf("-> not looping, len(rule) = %d", len(rule.Prefix()))
 					if longest.Rule() == nil || len(rule.Prefix()) > len(longest.Prefix()) {
 						longest = rule
 					} else if len(rule.Prefix()) == len(longest.Prefix()) {
@@ -174,10 +197,21 @@ func (p *Parser) walk(item lr.Item, pos uint64, listener Listener, level int) *R
 					}
 				}
 			}
+			if longest.Rule() == nil {
+				panic(fmt.Sprintf("no completed item available to satisfy %v", item))
+			}
+			trys = trys.add(longest.Rule()) // remember we tried this rule for this span
+			if leftmost && longest.Origin != item.Origin {
+				panic(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", longest))
+			}
 			T().Debugf("Selected rule %s", longest)
-			ruleNodes[l-n-1] = p.walk(longest, pos, listener, level+1)
+			ruleNodes[l-n-1] = p.walk(longest, pos, try(l, trys), listener, level+1)
 			pos = longest.Origin // k
 		}
+	}
+	if pos > item.Origin {
+		T().Errorf("Did not reach start of rule derivation, parser is stuck")
+		panic("di not reach start of rule derivation, parser is stuck")
 	}
 	value := listener.Reduce(item.Rule().LHS, item.Rule().Serial, ruleNodes, extent, level)
 	node := &RuleNode{
@@ -187,6 +221,13 @@ func (p *Parser) walk(item lr.Item, pos uint64, listener Listener, level int) *R
 	}
 	T().Infof("Tree node    %d|-----%s-----|%d", extent.From(), item.Rule().LHS.Name, extent.To())
 	return node
+}
+
+func try(rhslen int, trys ruleset) ruleset {
+	if rhslen == 1 {
+		return trys
+	}
+	return ruleset{}
 }
 
 // Does item complete a rule with LHS B ?
@@ -210,16 +251,18 @@ func cleanupState(S *iteratable.Set) {
 
 // TreeBuilder is a DerivationListener which is able to create a parse tree/forest
 // from the Earley-states. Users may create one and call it themselves, but the more
-// common usage pattern is by setting the GenerateTree-option for a parser and
-// retrieving the parse-tree/forest from parser.Forest.
+// common usage pattern is by setting the option 'GenerateTree' for a parser and
+// retrieving the parse-tree/forest with `parser.Forest()`.
 type TreeBuilder struct {
 	forest  *sppf.Forest
 	grammar *lr.Grammar
 }
 
 // NewTreeBuilder creates a TreeBuilder given an input grammar. This should obviously
-// be the same grammar as the one used for parsing, but this is not checked.
-// The TreeBuilder uses the grammar to
+// be the same grammar as the one used for parsing, but this is not enforced.
+//
+// The TreeBuilder uses the grammar for access to rules and their symbols, which
+// are a pre-requisite for generating the derivation path(s).
 func NewTreeBuilder(g *lr.Grammar) *TreeBuilder {
 	return &TreeBuilder{
 		forest:  sppf.NewForest(),
@@ -267,8 +310,8 @@ func reverse(syms []*lr.Symbol) []*lr.Symbol {
 }
 
 /*
-From http://loup-vaillant.fr/tutorials/earley-parsing/parser
-The author states:
+From http://loup-vaillant.fr/tutorials/earley-parsing/parser,
+the author states:
 
 	A completed item only stores its beginning and its rule. Its end is implicit:
 	it's the Earley set it is stored on. We can reverse that. Instead of having this:
@@ -292,7 +335,7 @@ beginning, we need backtracking to identify them.
 */
 
 // reverseStates reverses the states after a successful parse, following the idea
-// of http://loup-vaillant.fr/tutorials/earley-parsing/parser
+// of http://loup-vaillant.fr/tutorials/earley-parsing/parser.
 // However, currently it seems not very useful.
 func (p *Parser) reverseStates() []*iteratable.Set {
 	l := len(p.states)
