@@ -6,6 +6,7 @@ import (
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 	"github.com/npillmayer/gorgo/lr/sppf"
+	"github.com/npillmayer/schuko/gconf"
 )
 
 // TokenAt returns the input token at position pos.
@@ -159,22 +160,29 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		T().Debugf("R=%s", itemSetString(R))
 		switch R.Size() {
 		case 0: // cannot happen
-			panic(fmt.Sprintf("predecessor for item missing, parse is stuck: %v", item))
+			if stuck(fmt.Sprintf("predecessor for item missing, parse is stuck: %v", item)) {
+				return nil
+			}
 		case 1: // non-ambiguous
 			child := R.First().(lr.Item)
 			if leftmost && child.Origin != item.Origin {
-				panic(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", child))
+				if stuck(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", child)) {
+					return nil
+				}
 			}
-			ruleNodes[l-n-1] = p.walk(child, pos, try(l, trys), listener, level+1)
+			ruleNodes[l-n-1] = p.walk(child, pos, try(pos, end, trys), listener, level+1)
 			pos = child.Origin // k
 		default: // ambiguous: resolve by longest rule first, then by lower rule number
+			// debugCnt++
+			// if debugCnt > 2 {
+			// 	panic("STOP AND DEBUG")
+			// }
 			var longest lr.Item
 			R.IterateOnce()
 			for R.Next() {
 				rule := R.Item().(lr.Item) // 'rule' is a completed item [B→…A•, k]
-				// interval(longest) < interval(item) ?
-				T().Errorf("longest = %v, pos = %v, end = %v", longest, pos, end)
-				T().Errorf("   rule = %v, item = %v, origin = %v", rule, item.Origin, rule.Origin)
+				//T().Debugf("longest = %v, pos = %v, end = %v", longest, pos, end)
+				//T().Debugf("   rule = %v, item = %v, origin = %v", rule, item.Origin, rule.Origin)
 				// avoid looping with ancestor-rule = current rule
 				if trys.contains(rule.Rule()) { // we tried this rule somewhere up in the derivation walk
 					continue // skip this rule
@@ -185,7 +193,8 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					// TODO: Let clients decide via option? The default now works for many cases,
 					// but automatically prefers a right-derivation. This may not be what clients want,
 					// e.g. for left-associative operators.
-					T().Errorf("-> not looping, len(rule) = %d", len(rule.Prefix()))
+					//
+					// interval(longest) < interval(item) ?
 					if longest.Rule() == nil || len(rule.Prefix()) > len(longest.Prefix()) {
 						longest = rule
 					} else if len(rule.Prefix()) == len(longest.Prefix()) {
@@ -198,20 +207,25 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 				}
 			}
 			if longest.Rule() == nil {
-				panic(fmt.Sprintf("no completed item available to satisfy %v", item))
+				if stuck(fmt.Sprintf("no completed item available to satisfy %v", item)) {
+					return nil
+				}
 			}
 			trys = trys.add(longest.Rule()) // remember we tried this rule for this span
 			if leftmost && longest.Origin != item.Origin {
-				panic(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", longest))
+				if stuck(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", longest)) {
+					return nil
+				}
 			}
 			T().Debugf("Selected rule %s", longest)
-			ruleNodes[l-n-1] = p.walk(longest, pos, try(l, trys), listener, level+1)
+			ruleNodes[l-n-1] = p.walk(longest, pos, try(pos, end, trys), listener, level+1)
 			pos = longest.Origin // k
 		}
 	}
 	if pos > item.Origin {
-		T().Errorf("Did not reach start of rule derivation, parser is stuck")
-		panic("di not reach start of rule derivation, parser is stuck")
+		if stuck("did not reach start of rule derivation, parser is stuck") {
+			return nil
+		}
 	}
 	value := listener.Reduce(item.Rule().LHS, item.Rule().Serial, ruleNodes, extent, level)
 	node := &RuleNode{
@@ -223,8 +237,10 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 	return node
 }
 
-func try(rhslen int, trys ruleset) ruleset {
-	if rhslen == 1 {
+// var debugCnt int // sometimes it's helpful to restrict recursion depth during tree walk
+
+func try(pos, end uint64, trys ruleset) ruleset {
+	if pos == end {
 		return trys
 	}
 	return ruleset{}
@@ -245,6 +261,21 @@ func cleanupState(S *iteratable.Set) {
 			S.Remove(item)
 		}
 	}
+}
+
+func stuck(msg string) bool {
+	T().Errorf(msg)
+	if gconf.GetBool("panic-on-parser-stuck") {
+		panic(`Earley-parser is stuck.
+
+Configuration flag panic-on-parser-stuck is set to true. It is aimed at helping 
+to debug a parser and do a post-mortem of why it got stuck. However, if this is
+a production environment and you did not expect this to panic, please unset
+panic-on-parser-stuck to its default (false).
+
+` + msg)
+	}
+	return true
 }
 
 // --- Tree building listener -------------------------------------------
@@ -337,6 +368,8 @@ beginning, we need backtracking to identify them.
 // reverseStates reverses the states after a successful parse, following the idea
 // of http://loup-vaillant.fr/tutorials/earley-parsing/parser.
 // However, currently it seems not very useful.
+//
+/*
 func (p *Parser) reverseStates() []*iteratable.Set {
 	l := len(p.states)
 	reversed := make([]*iteratable.Set, l)
@@ -358,3 +391,4 @@ func (p *Parser) reverseStates() []*iteratable.Set {
 	}
 	return reversed
 }
+*/
