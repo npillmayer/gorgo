@@ -10,43 +10,37 @@ import (
 
 // --- Tags -------------------------------------------------------
 
-// Every symbol has a serial ID.
-var serialID int32 = 1 // must not start with 0 !
-
 // Tag is the symbols type to be stored into symbol tables. It may be a
 // little surprising this type is not called 'Symbol', but I prefer the
-// name 'tag' because it is less confusing when dealing with parser
+// name 'Tag' because it is less confusing when dealing with parser
 // generators and grammars: Grammars consist of symbols (within rules), too.
 // Thus, symbols are used in the scope of the grammar, tags are used during
 // runtime (of the client program).
 //
 type Tag struct {
-	Name     string
-	ID       int32
-	typ      int8
-	Sibling  *Tag // Some variables form small trees
-	Children *Tag
-	UData    interface{} // user data
+	name string
+	//id   int32
+	Typ int8
+	//Sibling  *Tag // Some variables form small trees
+	//Children *Tag
+	UData interface{} // user data
 }
 
 // Pre-defined tag types, if you want to use them.
 const (
-	Undefined int = iota
+	Undefined int8 = iota
 	IntegerType
 	FloatType
 	StringType
-	ColorType
-	PairType
-	PathType
-	PenType
+	BooleanType
 )
 
 // NewTag creates a new tag, with a new ID.
 func NewTag(nm string) *Tag {
-	serialID++
+	//serial := serialCounter.Get()
 	var tag = &Tag{
-		Name: nm,
-		ID:   serialID,
+		name: nm,
+		//id:   serial,
 	}
 	return tag
 }
@@ -56,42 +50,38 @@ func NewTag(nm string) *Tag {
 //    tag := NewTag("myTag").WithType(FloatType)
 //
 func (s *Tag) WithType(t int8) *Tag {
-	s.typ = t
+	s.Typ = t
 	return s
-}
-
-// ChangeType sets the type of a tag.
-func (s *Tag) ChangeType(t int8) {
-	s.typ = t
 }
 
 // String is a debug Stringer for symbols.
 func (s *Tag) String() string {
-	return fmt.Sprintf("<tag '%s'[%d]:%d>", s.Name, s.ID, s.typ)
+	//return fmt.Sprintf("<tag '%s'[%d]:%d>", s.Name(), s.ID(), s.Type)
+	return fmt.Sprintf("<tag '%s':%d>", s.Name(), s.Typ)
 }
 
-// Type gets the tag's type.
-func (s *Tag) Type() int8 {
-	return s.typ
+// Name gets the tag's name.
+func (s *Tag) Name() string {
+	return s.name
 }
 
 // AppendChild appends a rightmost child tag.
 // Returns the tag (for chaining).
-func (s *Tag) AppendChild(ch *Tag) *Tag {
-	//T().Debug("---> append child %v to %v\n", ch, s)
-	if s.Children == nil {
-		T().Debugf("appending first child: %s", ch)
-		s.Children = ch
-	} else {
-		next := s.Children
-		for ; next.Sibling != nil; next = next.Sibling {
-			// do nothing
-		}
-		next.Sibling = ch
-		T().Debugf("appending child: %s\n", next.Sibling)
-	}
-	return s
-}
+// func (s *Tag) AppendChild(ch *Tag) *Tag {
+// 	//T().Debug("---> append child %v to %v\n", ch, s)
+// 	if s.Children == nil {
+// 		T().Debugf("appending first child: %s", ch)
+// 		s.Children = ch
+// 	} else {
+// 		next := s.Children
+// 		for ; next.Sibling != nil; next = next.Sibling {
+// 			// do nothing
+// 		}
+// 		next.Sibling = ch
+// 		T().Debugf("appending child: %s\n", next.Sibling)
+// 	}
+// 	return s
+// }
 
 // === Symbol Tables =========================================================
 
@@ -156,8 +146,8 @@ func (t *SymbolTable) DefineTag(tagname string) (*Tag, *Tag) {
 
 // InsertTag inserts a pre-created symbol.
 func (t *SymbolTable) InsertTag(tag *Tag) *Tag {
-	old := t.ResolveTag(tag.Name)
-	t.Table[tag.Name] = tag
+	old := t.ResolveTag(tag.name)
+	t.Table[tag.name] = tag
 	return old
 }
 

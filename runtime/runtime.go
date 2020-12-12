@@ -16,30 +16,6 @@ This module implements a stack of memory frames.
 Memory frames are used by an interpreter to allocate local storage
 for active scopes.
 
-Expression Stack
-
-This module implements a stack of expressions. It is used for
-expression evaluation during a parser walk of an expression AST.
-Expressions can be of type numeric or of type pair.
-
-Complexity arises from the fact that we handle not only known
-quantities, but unknown ones, too. Unknown variables will be handled
-as terms in linear polynomials. Numeric expressions on the stack are always
-represented by linear polynomials, containing solved and unsolved variables.
-
-The expression stack is connected to a system of linear equations (LEQ).
-If an equation is constructed from 2 polynomials, it is put into the LEQ.
-The LEQ operates on generic identifiers and knows nothing of the
-'real life' symbols we use in the parser. The expression stack is
-a bridge between both worlds: It holds a table (VariableResolver) to
-map LEQ-internal variables to real-life symbols. The variable resolver
-will receive a message from the LEQ whenever an equation gets solved,
-i.e. variables become known.
-
-Other types of expression are not considered native expressions for the
-stack, but it is nevertheless possible to put them on the stack. They
-are stored as interface{} and there are no supporting methods or
-arithmetic operations defined for them.
 
 ----------------------------------------------------------------------
 
@@ -91,7 +67,7 @@ func T() tracing.Trace {
 type Runtime struct {
 	ScopeTree     *ScopeTree        // collect scopes
 	MemFrameStack *MemoryFrameStack // runtime stack of memory frames
-	//ExprStack     *ExprStack        // evaluate arithmetic expressions
+	UData         interface{}       // extension point
 }
 
 // NewRuntimeEnvironment constructs
@@ -108,6 +84,5 @@ func NewRuntimeEnvironment(withDeclarations func(string) *Tag) *Runtime {
 	mf.Scope = rt.ScopeTree.Globals()                        // connect the global frame with the global scope
 	rt.MemFrameStack.Globals().SymbolTable = NewSymbolTable()
 	//rt.MemFrameStack.Globals().SymbolTable = NewSymbolTable(withDeclarations)
-	//rt.ExprStack = NewExprStack()
 	return rt
 }
