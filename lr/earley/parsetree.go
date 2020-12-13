@@ -195,15 +195,17 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					// e.g. for left-associative operators.
 					//
 					// interval(longest) < interval(item) ?
-					if longest.Rule() == nil || len(rule.Prefix()) > len(longest.Prefix()) {
+					// if longest.Rule() == nil || len(rule.Prefix()) > len(longest.Prefix()) {
+					// 	longest = rule
+					// } else if len(rule.Prefix()) == len(longest.Prefix()) {
+					if longest.Rule() == nil {
 						longest = rule
-					} else if len(rule.Prefix()) == len(longest.Prefix()) {
-						if rule.Origin < longest.Origin {
-							longest = rule
-						} else if rule.Origin == longest.Origin && rule.Rule().Serial < longest.Rule().Serial {
-							longest = rule
-						}
+					} else if rule.Origin < longest.Origin {
+						longest = rule
+					} else if rule.Origin == longest.Origin && rule.Rule().Serial < longest.Rule().Serial {
+						longest = rule
 					}
+					// }
 				}
 			}
 			if longest.Rule() == nil {
