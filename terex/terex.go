@@ -393,6 +393,22 @@ func (l *GCons) Cddar() Atom {
 	return l.Cdr.Cdr.Car
 }
 
+// Nth returns the <n>th element of a list, or nil if the length of the list is < n.
+func (l *GCons) Nth(n int) Atom {
+	if l == nil || n <= 0 {
+		return NilAtom
+	}
+	n--
+	for l != nil && n > 0 {
+		l = l.Cdr
+		n--
+	}
+	if l == nil {
+		return NilAtom
+	}
+	return l.Car
+}
+
 // Length returns the length of a list.
 func (l *GCons) Length() int {
 	if l == nil {

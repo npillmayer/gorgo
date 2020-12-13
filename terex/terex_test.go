@@ -71,6 +71,18 @@ func TestFirst(t *testing.T) {
 	}
 }
 
+func TestNth(t *testing.T) {
+	gtrace.SyntaxTracer = gotestingadapter.New()
+	teardown := gotestingadapter.RedirectTracing(t)
+	defer teardown()
+	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	l := List(1, 2, 3, 4, 5)
+	f := l.Nth(3)
+	if f.Data != 3.0 {
+		t.Errorf("Expected 3rd element to be 3, is %v", f.Data)
+	}
+}
+
 func TestMatch1(t *testing.T) {
 	gtrace.SyntaxTracer = gotestingadapter.New()
 	teardown := gotestingadapter.RedirectTracing(t)
