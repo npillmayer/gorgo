@@ -222,14 +222,25 @@ func (t treeTraverser) tos() *terex.GCons {
 	return nil
 }
 
+// Flags for tree traversal, either top-down or bottom up
+const (
+	DepthFirstDir int = iota
+	TopDownDir
+)
+
 // Traverse creates a sequence from a TeREx tree structure. The sequence traverses the
 // tree in depth-first post-order. Internally it uses a goroutine to produce the sequence
 // of nodes, receiving them in a channel.
 //
 // Warning: Currently a goroutine will leak if not all of the nodes of the list are fetched
 // by the client.
-func Traverse(l *terex.GCons) TreeSeq {
-	channel := TreeIteratorCh(l)
+func Traverse(l *terex.GCons, dir int) TreeSeq {
+	var channel <-chan TreeNode
+	if dir == TopDownDir {
+		channel = TreeTopDownCh(l)
+	} else {
+		channel = TreeDepthFirstCh(l)
+	}
 	if channel == nil {
 		return TreeSeq{}
 	}
@@ -252,9 +263,8 @@ func Traverse(l *terex.GCons) TreeSeq {
 }
 
 /*
-TreeIteratorCh creates a goroutine and a channel to produce a sequence of nodes from
+TreeDepthFirstCh creates a goroutine and a channel to produce a sequence of nodes from
 a depth-first tree walk.
-
 
 For TeREx' pre-order, a node's content is Car, left child is Cdar, right child is Cddr.
 The example tree from https://www.geeksforgeeks.org/iterative-postorder-traversal-using-stack/:
@@ -276,7 +286,7 @@ A depth-first traversal will yield
 Clients usually will not call this function directly, but rather get it wrapped
 in a call to Traverse(…).
 */
-func TreeIteratorCh(l *terex.GCons) <-chan TreeNode {
+func TreeDepthFirstCh(l *terex.GCons) <-chan TreeNode {
 	/*
 		https://www.geeksforgeeks.org/iterative-postorder-traversal-using-stack/
 
@@ -337,6 +347,33 @@ func TreeIteratorCh(l *terex.GCons) <-chan TreeNode {
 	return channel
 }
 
+// TreeTopDownCh creates a goroutine and a channel to produce a sequence of nodes from
+// a top-down tree walk.
+func TreeTopDownCh(l *terex.GCons) <-chan TreeNode {
+	if l == nil {
+		return nil
+	}
+	channel := make(chan TreeNode)
+	go func(l *terex.GCons) {
+		defer close(channel)
+		root := l // start here
+		var parent *terex.GCons
+		descendChild(root, parent, channel)
+	}(l)
+	return channel
+}
+
+func descendChild(l *terex.GCons, parent *terex.GCons, ch chan<- TreeNode) {
+	ch <- node(l, parent)
+	left, right := children(l)
+	if left != nil {
+		descendChild(left, l, ch)
+	}
+	if right != nil {
+		descendChild(right, l, ch)
+	}
+}
+
 func children(node *terex.GCons) (*terex.GCons, *terex.GCons) {
 	if node == nil {
 		return nil, nil
@@ -385,7 +422,7 @@ func (seq *TreeSeq) Next() TreeNode {
 	return node
 }
 
-// List returns all the nodes of a tree walk as a instantiated list.
+// List returns all the nodes of a tree walk as an instantiated list.
 func (seq TreeSeq) List() *terex.GCons {
 	if seq.Done() {
 		return nil

@@ -108,7 +108,7 @@ func TestTreeTraverse1(t *testing.T) {
 	defer teardown()
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
 	i := 0
-	for node := range fp.TreeIteratorCh(makeTree()) {
+	for node := range fp.TreeDepthFirstCh(makeTree()) {
 		t.Logf("node=%s", node)
 		i++
 	}
@@ -124,10 +124,24 @@ func TestTreeTraverse2(t *testing.T) {
 	teardown := gotestingadapter.RedirectTracing(t)
 	defer teardown()
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	l := fp.Traverse(tree).List()
+	l := fp.Traverse(tree, fp.DepthFirstDir).List()
 	t.Logf("list = %s", l.ListString())
 	if l.ListString() != "(4 5 2 6 7 3 1)" {
 		t.Errorf("Depth-first traversal to result in (4 5 2 6 7 3 1), is %s", l.ListString())
+	}
+}
+
+func TestTreeTraverse3(t *testing.T) {
+	tree := makeTree()
+	t.Logf("tree = %s", tree.ListString())
+	gtrace.SyntaxTracer = gotestingadapter.New()
+	teardown := gotestingadapter.RedirectTracing(t)
+	defer teardown()
+	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	l := fp.Traverse(tree, fp.TopDownDir).List()
+	t.Logf("list = %s", l.ListString())
+	if l.ListString() != "(1 2 4 5 3 6 7)" {
+		t.Errorf("Top-down traversal to result in (1 2 4 5 3 6 7), is %s", l.ListString())
 	}
 }
 
@@ -139,7 +153,7 @@ func TestTreeRange(t *testing.T) {
 	defer teardown()
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 	nodes := make([]fp.TreeNode, 0, 7)
-	for node := range fp.Traverse(tree).Range() {
+	for node := range fp.Traverse(tree, fp.DepthFirstDir).Range() {
 		nodes = append(nodes, node)
 	}
 	t.Logf("nodes=%v", nodes)
@@ -156,7 +170,7 @@ func TestTreeFilter(t *testing.T) {
 	defer teardown()
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 	count = 0
-	l := fp.Traverse(tree).Where(fp.IsLeaf()).Map(counter).List()
+	l := fp.Traverse(tree, fp.DepthFirstDir).Where(fp.IsLeaf()).Map(counter).List()
 	t.Logf("list = %s", l.ListString())
 	if l.Length() != 4 {
 		t.Errorf("Filtered list expected to be of length 4, is %s", l.ListString())
