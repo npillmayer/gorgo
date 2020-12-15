@@ -490,6 +490,28 @@ func (l *GCons) Branch(other *GCons) *GCons {
 	return l
 }
 
+// Drop returns a copy of l with atom dropped if they are matched by
+// a filter function.
+func (l *GCons) Drop(filter func(Atom) bool) *GCons {
+	if l == nil {
+		return nil
+	}
+	var start, f *GCons
+	for l != nil {
+		if !filter(l.Car) {
+			if f == nil {
+				f = l.copyCons()
+				start = f
+			} else {
+				f.Cdr = l.copyCons()
+				f = f.Cdr
+			}
+		}
+		l = l.Cdr
+	}
+	return start
+}
+
 // Map applies a mapping-function to every element of a list.
 func (l *GCons) Map(mapper Mapper, env *Environment) *GCons {
 	return _Map(mapper, Elem(l), env).AsList()
@@ -658,6 +680,9 @@ func (el Element) AsSymbol() *Symbol {
 
 func (el Element) Sublist() Element {
 	//atom := el.AsAtom()
+	if el.IsNil() {
+		return el
+	}
 	atom := el.AsList().Car
 	if !atom.IsNil() && atom.Type() == ConsType {
 		if cons, ok := atom.Data.(*GCons); ok {

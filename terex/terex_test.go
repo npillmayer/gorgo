@@ -83,6 +83,21 @@ func TestNth(t *testing.T) {
 	}
 }
 
+func TestDrop(t *testing.T) {
+	gtrace.SyntaxTracer = gotestingadapter.New()
+	teardown := gotestingadapter.RedirectTracing(t)
+	defer teardown()
+	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	l := List(1, 2, 3, 4, 5)
+	f := l.Drop(func(a Atom) bool {
+		return a.Data == 3.0
+	})
+	t.Logf("f = %v", f.ListString())
+	if f.Length() < 3 || f.Nth(3).Data != 4.0 {
+		t.Errorf("Expected 3rd element to be 4, is %v", f.Nth(3).Data)
+	}
+}
+
 func TestMatch1(t *testing.T) {
 	gtrace.SyntaxTracer = gotestingadapter.New()
 	teardown := gotestingadapter.RedirectTracing(t)
