@@ -184,7 +184,8 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 				//T().Debugf("longest = %v, pos = %v, end = %v", longest, pos, end)
 				//T().Debugf("   rule = %v, item = %v, origin = %v", rule, item.Origin, rule.Origin)
 				// avoid looping with ancestor-rule = current rule
-				if trys.contains(rule.Rule()) { // we tried this rule somewhere up in the derivation walk
+				if trys.contains(rule.Rule(), rule.Origin) { // we tried this rule somewhere up in the derivation walk
+					T().Infof("skipping rule %v, already visited", rule)
 					continue // skip this rule
 				}
 				//if item.Origin <= rule.Origin && !(item.Origin == rule.Origin && pos == end) {
@@ -213,7 +214,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					return nil
 				}
 			}
-			trys = trys.add(longest.Rule()) // remember we tried this rule for this span
+			trys = trys.add(longest.Rule(), longest.Origin) // remember we tried this rule for this span
 			if leftmost && longest.Origin != item.Origin {
 				if stuck(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", longest)) {
 					return nil

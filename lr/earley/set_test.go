@@ -16,7 +16,7 @@ func TestSet1(t *testing.T) {
 	defer teardown()
 	//
 	set := ruleset{}
-	if set.contains(nil) {
+	if set.contains(nil, 0) {
 		t.Errorf("set contains nil, no set should")
 	}
 }
@@ -33,13 +33,13 @@ func TestSet2(t *testing.T) {
 	g, _ := b.Grammar()            // [0]: S' → S
 	//
 	var set ruleset
-	set = set.add(g.Rule(1))
-	if !set.contains(g.Rule(1)) {
+	set = set.add(g.Rule(1), 5)
+	if !set.contains(g.Rule(1), 5) {
 		t.Errorf("Expected rule[1] to be contained in set, isn't")
 	}
-	set = set.add(g.Rule(2))
+	set = set.add(g.Rule(2), 3)
 	set.delete(g.Rule(2))
-	if set.contains(g.Rule(2)) {
+	if set.contains(g.Rule(2), 3) {
 		t.Errorf("Expected rule[2] to not be contained in set, yet is")
 	}
 }
