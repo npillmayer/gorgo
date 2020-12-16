@@ -135,7 +135,8 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		if n+1 == l { // this is the leftmost symbol in RHS ⇒ must match at item.Origin
 			leftmost = true
 		}
-		T().Debugf("Next symbol in rev(RHS) is %s", B)
+		T().Debugf("Still working on item %v (%d…%d)", item, item.Origin, end)
+		T().Debugf("Next symbol in rev(RHS) is #%d:%s, pos=%d, end=%d", n, B, pos, end)
 		if B.IsTerminal() { // collect a terminal node
 			T().Infof("Tree node    %d: %s", pos-1, B)
 			value := listener.Terminal(B.Value, p.tokens[pos], lr.Span{pos - 1, pos}, level+1)
@@ -150,7 +151,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		// for each symbol B, find an item [B→…A•, k] which has completed it
 		S := p.states[pos]
 		cleanupState(S)
-		T().Debugf("Looking for item which completed %s", B)
+		T().Debugf("Looking for item which completed %s from %d", B, pos)
 		dumpState(p.states, pos)
 		T().Debugf("---------------------------------------------")
 		R := S.Copy().Subset(func(el interface{}) bool {
@@ -158,9 +159,11 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 			return itemCompletes(jtem, B)
 		}) // now R contains all items [B→…A•, k]
 		T().Debugf("R=%s", itemSetString(R))
+		trys.dump()
 		switch R.Size() {
 		case 0: // cannot happen
 			if stuck(fmt.Sprintf("predecessor for item missing, parse is stuck: %v", item)) {
+				panic("STUCK")
 				return nil
 			}
 		case 1: // non-ambiguous
@@ -214,14 +217,15 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					return nil
 				}
 			}
-			trys = trys.add(longest.Rule(), longest.Origin) // remember we tried this rule for this span
 			if leftmost && longest.Origin != item.Origin {
 				if stuck(fmt.Sprintf("leftmost symbol of RHS(%v) does not reach left side of span", longest)) {
 					return nil
 				}
 			}
 			T().Debugf("Selected rule %s", longest)
-			ruleNodes[l-n-1] = p.walk(longest, pos, try(pos, end, trys), listener, level+1)
+			newtrys := try(pos, end, trys)
+			newtrys = newtrys.add(longest.Rule(), longest.Origin) // remember we tried this rule for this span
+			ruleNodes[l-n-1] = p.walk(longest, pos, newtrys, listener, level+1)
 			pos = longest.Origin // k
 		}
 	}
@@ -244,6 +248,8 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 
 func try(pos, end uint64, trys ruleset) ruleset {
 	if pos == end {
+		T().Debugf("putting in trys:")
+		trys.dump()
 		return trys
 	}
 	return ruleset{}

@@ -51,3 +51,14 @@ func (set ruleset) delete(r *lr.Rule) {
 		delete(set, r)
 	}
 }
+
+func (set ruleset) dump() {
+	if set == nil {
+		T().Debugf("trys = { }")
+	}
+	T().Debugf("trys = {")
+	for k, v := range set {
+		T().Debugf("    %v ⇒ %v", k, v)
+	}
+	T().Debugf("}")
+}
