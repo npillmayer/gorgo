@@ -512,6 +512,14 @@ func (l *GCons) Drop(filter func(Atom) bool) *GCons {
 	return start
 }
 
+// Push prepends a list with atom a.
+func (l *GCons) Push(a Atom) *GCons {
+	if l == nil {
+		return Cons(a, nil)
+	}
+	return Cons(a, l)
+}
+
 // Map applies a mapping-function to every element of a list.
 func (l *GCons) Map(mapper Mapper, env *Environment) *GCons {
 	return _Map(mapper, Elem(l), env).AsList()
