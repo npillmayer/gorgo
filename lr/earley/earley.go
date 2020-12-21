@@ -50,7 +50,7 @@ by Keshav Pingali and Gianfranco Bilardi
 
 BSD License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Copyright (c) 2019–21, Norbert Pillmayer
 
 All rights reserved.
 
@@ -85,11 +85,12 @@ package earley
 import (
 	"fmt"
 
-	"github.com/npillmayer/gorgo/lr/sppf"
+	"github.com/cnf/structhash"
 
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 	"github.com/npillmayer/gorgo/lr/scanner"
+	"github.com/npillmayer/gorgo/lr/sppf"
 	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 )
@@ -101,25 +102,27 @@ func T() tracing.Trace {
 
 // Parser is an Earley-parser type. Create and initialize one with earley.NewParser(...)
 type Parser struct {
-	ga      *lr.LRAnalysis              // the analyzed grammar we operate on
-	scanner scanner.Tokenizer           // scanner deliveres tokens
-	states  []*iteratable.Set           // list of states, each a set of Earley-items
-	tokens  []interface{}               // we remember all input tokens, if requested
-	sc      uint64                      // state counter
-	mode    uint                        // flags controlling some behaviour of the parser
-	Error   func(p *Parser, msg string) // Error is called for each error encountered
-	forest  *sppf.Forest                // parse forest, if generated
+	ga        *lr.LRAnalysis              // the analyzed grammar we operate on
+	scanner   scanner.Tokenizer           // scanner deliveres tokens
+	states    []*iteratable.Set           // list of states, each a set of Earley-items
+	tokens    []interface{}               // we remember all input tokens, if requested
+	sc        uint64                      // state counter
+	mode      uint                        // flags controlling some behaviour of the parser
+	Error     func(p *Parser, msg string) // Error is called for each error encountered
+	forest    *sppf.Forest                // parse forest, if generated
+	backlinks map[string]lr.Item          // stores backlinks for parsetree-generation
 }
 
 // NewParser creates and initializes an Earley parser.
 func NewParser(ga *lr.LRAnalysis, opts ...Option) *Parser {
 	p := &Parser{
-		ga:      ga,
-		scanner: nil,
-		states:  make([]*iteratable.Set, 1, 512), // pre-alloc first state
-		tokens:  make([]interface{}, 1, 512),     // pre-alloc first slot
-		sc:      0,
-		mode:    optionStoreTokens,
+		ga:        ga,
+		scanner:   nil,
+		states:    make([]*iteratable.Set, 1, 512), // pre-alloc first state
+		tokens:    make([]interface{}, 1, 512),     // pre-alloc first slot
+		backlinks: make(map[string]lr.Item),
+		sc:        0,
+		mode:      optionStoreTokens,
 	}
 	for _, opt := range opts {
 		opt(p)
@@ -266,6 +269,12 @@ func (p *Parser) complete(S, S1 *iteratable.Set, item lr.Item) {
 		R.Each(func(e interface{}) { // now add [B→…A•…, k]
 			jtem := e.(lr.Item)
 			if jadv := jtem.Advance(); jadv != lr.NullItem {
+				if jadv.PeekSymbol() == nil {
+					//T().Errorf("%v COMPLETED DUE TO %v", jadv, item)
+					// store this backlink for later parsetree generation
+					h := hash(jadv)
+					p.backlinks[h] = item
+				}
 				S.Add(jadv)
 			}
 		})
@@ -366,4 +375,14 @@ func GenerateTree(b bool) Option {
 
 func (p *Parser) hasmode(m uint) bool {
 	return p.mode&m > 0
+}
+
+// --- Helpers ---------------------------------------------------------------
+
+func hash(i lr.Item) string {
+	hash, err := structhash.Hash(i, 1)
+	if err != nil {
+		panic(err)
+	}
+	return hash
 }

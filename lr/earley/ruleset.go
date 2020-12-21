@@ -46,6 +46,26 @@ func (set ruleset) contains(r *lr.Rule, n uint64) bool {
 	return false
 }
 
+func (set ruleset) containsSibling(r *lr.Rule, n uint64) (*lr.Rule, bool) {
+	if set.contains(r, n) {
+		return r, true
+	}
+	if len(r.RHS()) < 1 { // not sibling for eps-rules
+		return r, false
+	}
+	for rule, starts := range set {
+		if r.LHS == rule.LHS {
+			//T().Debugf("found LHS=%v, %v = %v ?", rule.LHS, rule, r)
+			for _, m := range starts {
+				if m == n {
+					return rule, true
+				}
+			}
+		}
+	}
+	return nil, false
+}
+
 func (set ruleset) delete(r *lr.Rule) {
 	if set != nil {
 		delete(set, r)

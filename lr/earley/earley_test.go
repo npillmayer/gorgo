@@ -131,6 +131,52 @@ func TestSPPF1(t *testing.T) {
 	}
 }
 
+func TestAmbiguity1(t *testing.T) {
+	gtrace.SyntaxTracer = gotestingadapter.New()
+	teardown := gotestingadapter.RedirectTracing(t)
+	defer teardown()
+	b := lr.NewGrammarBuilder("Test-G")
+	b.LHS("X").T("+", '+').N("X").End()
+	b.LHS("X").N("X").T("*", '*').N("X").End()
+	b.LHS("X").T("x", -2).End()
+	g, err := b.Grammar()
+	if err != nil {
+		t.Error(err)
+	}
+	ga := lr.Analysis(g)
+	if ga == nil {
+		t.Errorf("Could not analyze grammar")
+	}
+	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	input := "+x*x"
+	reader := strings.NewReader(input)
+	sc := scanner.GoTokenizer(fmt.Sprintf("test '%s'", input), reader)
+	parser := NewParser(ga)
+	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	accept, err := parser.Parse(sc, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	if !accept {
+		t.Errorf("Valid input string not accepted: '%s'", input)
+	}
+	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	walker := NewTreeBuilder(parser.ga.Grammar())
+	root := parser.WalkDerivation(walker)
+	if root == nil || root.Value == nil {
+		t.Fatalf("returned parse forest is empty")
+	}
+	_, ok := root.Value.(*sppf.SymbolNode)
+	if !ok || root.Symbol().Name != "S'" { // should have reduced top level rule
+		if root == nil {
+			t.Errorf("returned parse forest is empty")
+		} else {
+			t.Errorf("Expected root node of forest to be S', is %v", root.Symbol())
+		}
+	}
+	t.Fail()
+}
+
 // --- Expression Listener for testing ---------------------------------------
 
 type reducer func(*lr.Symbol, int, []*RuleNode, int) interface{}

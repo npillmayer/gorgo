@@ -153,7 +153,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		cleanupState(S)
 		T().Debugf("Looking for item which completed %s from %d", B, pos)
 		dumpState(p.states, pos)
-		T().Debugf("---------------------------------------------")
+		T().Debugf("---------------------------------------------------")
 		R := S.Copy().Subset(func(el interface{}) bool {
 			jtem := el.(lr.Item)
 			return itemCompletes(jtem, B)
@@ -181,15 +181,39 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 			// 	panic("STOP AND DEBUG")
 			// }
 			var longest lr.Item
+			var backlink lr.Item
+			if pos == end {
+				h := hash(item)
+				if pred, ok := p.backlinks[h]; ok {
+					T().Debugf("backlink  %v  <--  %v", pred, item)
+					backlink = pred
+					if !R.Contains(pred) {
+						T().Errorf("Backlink not present in R ?!?")
+						panic("Backlink missing")
+					}
+				}
+			}
 			R.IterateOnce()
 			for R.Next() {
 				rule := R.Item().(lr.Item) // 'rule' is a completed item [B→…A•, k]
 				//T().Debugf("longest = %v, pos = %v, end = %v", longest, pos, end)
 				//T().Debugf("   rule = %v, item = %v, origin = %v", rule, item.Origin, rule.Origin)
-				// avoid looping with ancestor-rule = current rule
-				if trys.contains(rule.Rule(), rule.Origin) { // we tried this rule somewhere up in the derivation walk
-					T().Infof("skipping rule %v, already visited", rule)
-					continue // skip this rule
+				if rule == backlink {
+					longest = rule
+					break
+				}
+				if pos == end {
+					// avoid looping with ancestor-rule = current rule
+					if trys.contains(rule.Rule(), rule.Origin) { // we tried this rule somewhere up in the derivation walk
+						T().Infof("skipping rule %v, already visited", rule)
+						continue // skip this rule
+					}
+					//if r, _ := trys.containsSibling(rule.Rule(), rule.Origin); false {
+					if r, found := trys.containsSibling(rule.Rule(), rule.Origin); found {
+						// alternative derivation present
+						T().Infof("skipping rule %v, sibling present: %v", rule, r)
+						continue // skip this rule
+					}
 				}
 				//if item.Origin <= rule.Origin && !(item.Origin == rule.Origin && pos == end) {
 				if item.Origin <= rule.Origin {
