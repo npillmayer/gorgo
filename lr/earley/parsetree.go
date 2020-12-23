@@ -159,7 +159,6 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 			return itemCompletes(jtem, B)
 		}) // now R contains all items [B→…A•, k]
 		T().Debugf("R=%s", itemSetString(R))
-		trys.dump()
 		switch R.Size() {
 		case 0: // cannot happen
 			if stuck(fmt.Sprintf("predecessor for item missing, parse is stuck: %v", item)) {
@@ -193,7 +192,10 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 						panic("Backlink missing")
 					}
 				}
+			} else {
+				trys = ruleset{}
 			}
+			trys.dump()
 			R.IterateOnce()
 			for R.Next() {
 				rule := R.Item().(lr.Item) // 'rule' is a completed item [B→…A•, k]
@@ -201,6 +203,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 				//T().Debugf("   rule = %v, item = %v, origin = %v", rule, item.Origin, rule.Origin)
 				if rule == backlink {
 					longest = rule
+					T().Debugf("backlink rule identified: %v", rule)
 					break
 				}
 				if pos == end {
@@ -241,10 +244,13 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					// } else if len(rule.Prefix()) == len(longest.Prefix()) {
 					if longest.Rule() == nil {
 						longest = rule
+						T().Debugf("  new longest rule: %v", rule)
 					} else if rule.Origin < longest.Origin {
 						longest = rule
+						T().Debugf("subst longest rule: %v", rule)
 					} else if rule.Origin == longest.Origin && rule.Rule().Serial < longest.Rule().Serial {
 						longest = rule
+						T().Debugf(" prio longest rule: %v", rule)
 					}
 					// }
 				}
@@ -262,7 +268,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 			T().Debugf("Selected rule %s", longest)
 			T().Debugf("Sub-Long rule %v", sublong)
 			if sublong.Rule() != nil && longest != sublong {
-				panic("decision point")
+				T().Errorf("decision point")
 			}
 			newtrys := try(pos, end, trys)
 			newtrys = newtrys.add(longest.Rule(), longest.Origin) // remember we tried this rule for this span
