@@ -181,9 +181,10 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 			// 	panic("STOP AND DEBUG")
 			// }
 			var longest lr.Item
+			var sublong lr.Item
 			var backlink lr.Item
 			if pos == end {
-				h := hash(item)
+				h := hash(item, pos)
 				if pred, ok := p.backlinks[h]; ok {
 					T().Debugf("backlink  %v  <--  %v", pred, item)
 					backlink = pred
@@ -213,6 +214,18 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 						// alternative derivation present
 						T().Infof("skipping rule %v, sibling present: %v", rule, r)
 						continue // skip this rule
+					}
+				} else {
+					h := hash(rule, pos)
+					if subpred, ok := p.backlinks[h]; ok {
+						T().Debugf("sub-backlink  %v  <--  %v", subpred, rule)
+						if sublong.Rule() == nil {
+							sublong = rule
+						} else if rule.Origin < sublong.Origin {
+							sublong = rule
+						} else if rule.Origin == sublong.Origin && rule.Rule().Serial < sublong.Rule().Serial {
+							sublong = rule
+						}
 					}
 				}
 				//if item.Origin <= rule.Origin && !(item.Origin == rule.Origin && pos == end) {
@@ -247,6 +260,10 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 				}
 			}
 			T().Debugf("Selected rule %s", longest)
+			T().Debugf("Sub-Long rule %v", sublong)
+			if sublong.Rule() != nil && longest != sublong {
+				panic("decision point")
+			}
 			newtrys := try(pos, end, trys)
 			newtrys = newtrys.add(longest.Rule(), longest.Origin) // remember we tried this rule for this span
 			ruleNodes[l-n-1] = p.walk(longest, pos, newtrys, listener, level+1)

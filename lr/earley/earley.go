@@ -214,7 +214,7 @@ func (p *Parser) innerLoop(i uint64, x inputSymbol) {
 		item := S.Item().(lr.Item)
 		p.scan(S, S1, item, x.tokval) // may add items to S1
 		p.predict(S, S1, item, i)     // may add items to S
-		p.complete(S, S1, item)       // may add items to S
+		p.complete(S, S1, item, i)    // may add items to S
 	}
 	dumpState(p.states, i)
 }
@@ -251,7 +251,7 @@ func (p *Parser) predict(S, S1 *iteratable.Set, item lr.Item, i uint64) {
 
 // Completer:
 // If [A→…•, j] is in Si, add [B→…A•…, k] to Si for all items [B→…•A…, k] in Sj.
-func (p *Parser) complete(S, S1 *iteratable.Set, item lr.Item) {
+func (p *Parser) complete(S, S1 *iteratable.Set, item lr.Item, i uint64) {
 	if item.PeekSymbol() == nil { // dot is behind RHS
 		A, j := item.Rule().LHS, item.Origin
 		//T().Debugf("Completing rule for %s: %s", A, item)
@@ -272,7 +272,7 @@ func (p *Parser) complete(S, S1 *iteratable.Set, item lr.Item) {
 				if jadv.PeekSymbol() == nil {
 					//T().Errorf("%v COMPLETED DUE TO %v", jadv, item)
 					// store this backlink for later parsetree generation
-					h := hash(jadv)
+					h := hash(jadv, i)
 					p.backlinks[h] = item
 				}
 				S.Add(jadv)
@@ -379,9 +379,15 @@ func (p *Parser) hasmode(m uint) bool {
 
 // --- Helpers ---------------------------------------------------------------
 
-func hash(i lr.Item) string {
-	hash, err := structhash.Hash(i, 1)
-	if err != nil {
+func hash(i lr.Item, stateno uint64) string {
+	hash, err := structhash.Hash(struct {
+		item  lr.Item
+		state uint64
+	}{ // put it in an anonymous struct
+		item:  i,
+		state: stateno,
+	}, 1)
+	if err != nil { // no reason for this to happend, but API demands it
 		panic(err)
 	}
 	return hash
