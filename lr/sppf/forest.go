@@ -276,8 +276,11 @@ func (rhs *rhsNode) identified(start uint64, signature int32) *rhsNode {
 
 // rhsSignature hashes over the symbols of a RHS, given a slice of symbols and
 // a start position. The latter is used only in cases where RHS=ε.
+//
 // To randomize input positions, we map them to an array o of offsets.
-var o = [...]int64{107, 401, 353, 223, 811, 569, 619, 173, 433, 757}
+//
+var o = [...]int64{107, 401, 353, 223, 811, 569, 619, 173, 433, 757, 811,
+	823, 857, 863, 883, 907, 929, 947, 971, 983}
 
 func rhsSignature(rhs []*SymbolNode, start uint64) int32 {
 	const largePrime = int64(143743)
@@ -291,7 +294,8 @@ func rhsSignature(rhs []*SymbolNode, start uint64) int32 {
 			h *= v
 		}
 		h %= largePrime
-		h *= o[symnode.Extent.From()%uint64(len(o))]
+		from := symnode.Extent.From()
+		h *= o[(from*from)%uint64(len(o))] + int64(from)
 		h %= largePrime
 	}
 	return int32(h)

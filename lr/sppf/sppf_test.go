@@ -12,6 +12,36 @@ import (
 	"github.com/npillmayer/gorgo/lr"
 )
 
+func TestSignature(t *testing.T) {
+	gtrace.SyntaxTracer = gotestingadapter.New()
+	teardown := gotestingadapter.RedirectTracing(t)
+	defer teardown()
+	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	b := lr.NewGrammarBuilder("G")
+	b.LHS("S").N("A").End()
+	b.LHS("A").N("B").End()
+	b.LHS("B").T("x", 10).End()
+	g, _ := b.Grammar()
+	s1 := makeSym(g.SymbolByName("A")).spanning(1, 2)
+	rhs1 := []*SymbolNode{s1}
+	t.Logf("rhs=%v", rhs1)
+	s2 := makeSym(g.SymbolByName("A")).spanning(11, 12)
+	rhs2 := []*SymbolNode{s2}
+	t.Logf("rhs=%v", rhs2)
+	s3 := makeSym(g.SymbolByName("A")).spanning(15, 16)
+	rhs3 := []*SymbolNode{s3}
+	t.Logf("rhs=%v", rhs3)
+	sigma1 := rhsSignature(rhs1, 1)
+	sigma2 := rhsSignature(rhs2, 11)
+	sigma3 := rhsSignature(rhs3, 15)
+	t.Logf("Σ1 = %d", sigma1)
+	t.Logf("Σ2 = %d", sigma2)
+	t.Logf("Σ3 = %d", sigma3)
+	if sigma1 == sigma2 || sigma1 == sigma3 || sigma2 == sigma3 {
+		t.Errorf("Expected Σ[1…3] to be different from each other, aren't")
+	}
+}
+
 func TestSigma(t *testing.T) {
 	gtrace.SyntaxTracer = gotestingadapter.New()
 	teardown := gotestingadapter.RedirectTracing(t)
