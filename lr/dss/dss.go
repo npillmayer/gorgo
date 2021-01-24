@@ -16,9 +16,7 @@ All stacks are anchored at the root of the DSS.
 
 Please note that a DSS (this one, at least) is not well suited for general
 purpose stack operations. The non-deterministic concept of GLR-parsing
-will always lurk in the detail of this implementation. There are other
-stack implementations around which are much better suited, especially if
-performance matters.
+will always lurk in the detail of this implementation.
 
 API
 
@@ -715,6 +713,13 @@ func (stack *Stack) pop(toNode *Node, deleteNode bool, collectStacks bool) ([]*S
 	return r, err
 }
 
+// Die signals end of life for this stack.
+// The stack will be detached from the DSS root and will let go of its TOS.
+func (stack *Stack) Die() {
+	stack.root.removeStack(stack)
+	stack.tos = nil
+}
+
 // --- Debugging -------------------------------------------------------------
 
 // DSS2Dot outputs a DSS in Graphviz DOT format (for debugging purposes).
@@ -793,13 +798,6 @@ func WalkDAG(root *Root, worker func(*Node, interface{}), arg interface{}) {
 	for _, stack := range root.stacks {
 		walk(stack.tos, worker, arg)
 	}
-}
-
-// Die signals end of lfe for this stack.
-// The stack will be detached from the DSS root and will let go of its TOS.
-func (stack *Stack) Die() {
-	stack.root.removeStack(stack)
-	stack.tos = nil
 }
 
 // --- Helpers ---------------------------------------------------------------
