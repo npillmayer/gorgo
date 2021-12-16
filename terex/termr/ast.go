@@ -1,38 +1,14 @@
 package termr
 
 /*
-BSD License
+License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+*/
 
 import (
 	"errors"
@@ -72,7 +48,7 @@ type ErrorHandler interface {
 // term rewriters and variables/symbols necessary, and finally call ASTBuilder.AST(…).
 func NewASTBuilder(g *lr.Grammar) *ASTBuilder {
 	if g == nil {
-		T().Errorf("Grammar may not be nil")
+		tracer().Errorf("Grammar may not be nil")
 		return nil
 	}
 	ab := &ASTBuilder{
@@ -95,7 +71,7 @@ type TermR interface {
 // AddTermR adds an AST rewriter for a non-terminal grammar symbol to the builder.
 func (ab *ASTBuilder) AddTermR(trew TermR) {
 	if trew != nil {
-		T().Infof("Adding term rewriter for symbol %s", trew.String())
+		tracer().Infof("Adding term rewriter for symbol %s", trew.String())
 		ab.rewriters[trew.String()] = trew
 	}
 }
@@ -110,10 +86,10 @@ func (ab *ASTBuilder) AST(parseTree *sppf.Forest, tokRetr TokenRetriever) *terex
 	ab.toks = tokRetr
 	cursor := ab.forest.SetCursor(nil, nil) // TODO set Pruner
 	value := cursor.TopDown(ab, sppf.LtoR, sppf.Break)
-	T().Infof("AST creation return value = %v", value)
+	tracer().Infof("AST creation return value = %v", value)
 	if value != nil {
 		ab.Env.AST = value.(terex.Element).AsList()
-		T().Infof("AST = %s", ab.Env.AST.ListString())
+		tracer().Infof("AST = %s", ab.Env.AST.ListString())
 	}
 	return ab.Env
 }
@@ -130,11 +106,11 @@ func (ab *ASTBuilder) EnterRule(sym *lr.Symbol, rhs []*sppf.RuleNode, ctxt sppf.
 		if !rew.Descend(ctxt) {
 			return false
 		}
-		T().Debugf("-------> enter operator symbol: %v", sym)
+		tracer().Debugf("-------> enter operator symbol: %v", sym)
 		opSymListStart := terex.Cons(terex.Atomize(rew.Operator()), nil)
 		ab.stack = append(ab.stack, opSymListStart) // put '(op ... ' on stack
 	} else {
-		T().Debugf("-------> enter grammar symbol: %v", sym)
+		tracer().Debugf("-------> enter grammar symbol: %v", sym)
 	}
 	return true
 }
@@ -142,7 +118,7 @@ func (ab *ASTBuilder) EnterRule(sym *lr.Symbol, rhs []*sppf.RuleNode, ctxt sppf.
 // ExitRule is part of sppf.Listener interface.
 // Not intended for direct client use.
 func (ab *ASTBuilder) ExitRule(sym *lr.Symbol, rhs []*sppf.RuleNode, ctxt sppf.RuleCtxt) interface{} {
-	T().Debugf("<------- exit symbol: %v, now rewriting", sym)
+	tracer().Debugf("<------- exit symbol: %v, now rewriting", sym)
 	if op, ok := ab.rewriters[sym.Name]; ok {
 		env, err := ab.EnvironmentForGrammarRule(sym.Name, rhs)
 		if err != nil && ab.Error != nil {
@@ -150,28 +126,28 @@ func (ab *ASTBuilder) ExitRule(sym *lr.Symbol, rhs []*sppf.RuleNode, ctxt sppf.R
 		}
 		rhsList := ab.stack[len(ab.stack)-1] // operator is TOS ⇒ first element of RHS list
 		for _, r := range rhs {              // collect all the value of RHS symbols
-			T().Debugf("r = %v", r)
+			tracer().Debugf("r = %v", r)
 			rhsList = appendRHSResult(rhsList, r)
 		}
-		T().Infof("%s: Rewrite of %s", sym.Name, rhsList.ListString())
+		tracer().Infof("%s: Rewrite of %s", sym.Name, rhsList.ListString())
 		rewritten := op.Rewrite(rhsList, env) // returns a terex.Element
 		ab.stack = ab.stack[:len(ab.stack)-1] // pop initial '(op ...'
-		T().Infof("%s returns %s", sym.Name, rewritten.String())
+		tracer().Infof("%s returns %s", sym.Name, rewritten.String())
 		return rewritten
 	}
 	var list *terex.GCons
-	T().Infof("%s will rewrite |rhs| = %d symbols", sym.Name, len(rhs))
+	tracer().Infof("%s will rewrite |rhs| = %d symbols", sym.Name, len(rhs))
 	for _, r := range rhs {
 		list = appendRHSResult(list, r)
 	}
 	rew := noOpRewrite(list)
-	T().Infof("%s returns %s", sym.Name, rew.String())
-	T().Infof("done with rewriting grammar symbol: %v", sym)
+	tracer().Infof("%s returns %s", sym.Name, rew.String())
+	tracer().Infof("done with rewriting grammar symbol: %v", sym)
 	return rew
 }
 
 func noOpRewrite(list *terex.GCons) terex.Element {
-	T().Debugf("no-op rewrite of %v", list)
+	tracer().Debugf("no-op rewrite of %v", list)
 	if list != nil && list.Length() == 1 {
 		return terex.Elem(list.Car)
 	}
@@ -180,7 +156,7 @@ func noOpRewrite(list *terex.GCons) terex.Element {
 
 func appendRHSResult(list *terex.GCons, r *sppf.RuleNode) *terex.GCons {
 	if _, ok := r.Value.(terex.Element); !ok {
-		T().Errorf("r.Value=%v", r.Value)
+		tracer().Errorf("r.Value=%v", r.Value)
 		panic("RHS symbol is not of type Element")
 	}
 	e := r.Value.(terex.Element) // value of rule-node r is either atom or list
@@ -257,9 +233,9 @@ func (ab *ASTBuilder) Terminal(tokval int, token interface{}, ctxt sppf.RuleCtxt
 		} else {
 			s = t.(string)
 		}
-		T().Debugf("CONS(terminal=%s) = %v @%d [%s]", terminal.Name, atom, tokpos, s)
+		tracer().Debugf("CONS(terminal=%s) = %v @%d [%s]", terminal.Name, atom, tokpos, s)
 	} else {
-		T().Debugf("CONS(terminal=%s) = %v @%d", terminal.Name, atom, tokpos)
+		tracer().Debugf("CONS(terminal=%s) = %v @%d", terminal.Name, atom, tokpos)
 	}
 	return terex.Elem(atom)
 }
@@ -359,7 +335,7 @@ func (ab *ASTBuilder) EnvironmentForGrammarRule(symname string, rhs []*sppf.Rule
 			setSymbolValue(envsym, r)
 		}
 		symtrack[symname] = count + 1
-		T().Debugf("env sym = %v", envsym)
+		tracer().Debugf("env sym = %v", envsym)
 	}
 	return env, nil
 }

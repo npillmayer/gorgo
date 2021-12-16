@@ -112,7 +112,7 @@ type testOp struct {
 }
 
 func (op *testOp) Rewrite(list *terex.GCons, env *terex.Environment) terex.Element {
-	T().Debugf(env.Dump())
+	tracer().Debugf(env.Dump())
 	return terex.Elem(list)
 }
 
