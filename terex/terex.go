@@ -1,38 +1,14 @@
 package terex
 
 /*
-BSD License
+License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+*/
 
 import (
 	"bytes"
@@ -109,7 +85,7 @@ func Atomize(thing interface{}) Atom {
 	case AtomType:
 		atom.typ = c
 		atom.Data = nil
-		T().Debugf("atomize(%s) = %v", thing, atom)
+		tracer().Debugf("atomize(%s) = %v", thing, atom)
 	case int, int32, int64, uint, uint32, uint64, float32, float64:
 		f, err := toFloat(c)
 		if err != nil {
@@ -599,12 +575,12 @@ func (el Element) Dump(L tracing.TraceLevel) {
 	}
 	switch e := el.thing.(type) {
 	case Element:
-		T().Errorf("Dump element: recursive element")
+		tracer().Errorf("Dump element: recursive element")
 		panic("recursive element")
 	case *GCons:
 		trace(L)("\nlist =\n%s", e.IndentedListString())
 	default:
-		T().Errorf("element of unknown type = %v", e)
+		tracer().Errorf("element of unknown type = %v", e)
 		panic("unknown element type")
 	}
 }
@@ -612,13 +588,13 @@ func (el Element) Dump(L tracing.TraceLevel) {
 func trace(level tracing.TraceLevel) func(string, ...interface{}) {
 	switch level {
 	case tracing.LevelDebug:
-		return T().Debugf
+		return tracer().Debugf
 	case tracing.LevelInfo:
-		return T().Infof
+		return tracer().Infof
 	case tracing.LevelError:
-		return T().Errorf
+		return tracer().Errorf
 	}
-	return T().Debugf
+	return tracer().Debugf
 }
 
 func (el Element) IsAtom() bool {
@@ -808,7 +784,7 @@ func _ErrorMapper(err error) Mapper {
 
 func _Map(mapper Mapper, args Element, env *Environment) Element {
 	arglist := args.AsList()
-	T().Debugf("~~~~~~~~~~~ _Map%v", arglist.ListString())
+	tracer().Debugf("~~~~~~~~~~~ _Map%v", arglist.ListString())
 	if arglist == nil {
 		return Elem(nil)
 	}
@@ -816,17 +792,17 @@ func _Map(mapper Mapper, args Element, env *Environment) Element {
 		panic("Argument to _Map is not a list")
 	}
 	r := mapper(Elem(arglist.Car), env)
-	T().Debugf("Map: mapping(%s) = %s", arglist.Car, r)
+	tracer().Debugf("Map: mapping(%s) = %s", arglist.Car, r)
 	result := Cons(r.AsAtom(), nil)
 	if arglist.Cdr == nil {
-		T().Debugf("~~~~~~~~~~: _Map => %v", result)
+		tracer().Debugf("~~~~~~~~~~: _Map => %v", result)
 		return Elem(result)
 	}
 	iter := result
 	cons := arglist.Cdr
 	for cons != nil {
 		el := mapper(Elem(cons.Car), env)
-		T().Debugf("Map: mapping %s = %s", cons.Car, el)
+		tracer().Debugf("Map: mapping %s = %s", cons.Car, el)
 		if el.IsError() {
 			return el
 		}
@@ -835,7 +811,7 @@ func _Map(mapper Mapper, args Element, env *Environment) Element {
 		cons = cons.Cdr
 	}
 	//T().Debugf("_Map result = %s", result.ListString())
-	T().Debugf("~~~~~~~~~~~ _Map => %v", result.ListString())
+	tracer().Debugf("~~~~~~~~~~~ _Map => %v", result.ListString())
 	return Elem(result)
 }
 
@@ -874,14 +850,14 @@ of two elements; and in that case it sets x to (cadar foo) and c to (cddr foo).
 List l is the pattern, other is the argument to be matched against the pattern.
 */
 func (l *GCons) Match(other *GCons, env *Environment) bool {
-	T().Debugf("Match: %s vs %s", l.ListString(), other.ListString())
+	tracer().Debugf("Match: %s vs %s", l.ListString(), other.ListString())
 	if l == nil {
-		T().Debugf("l=nil")
+		tracer().Debugf("l=nil")
 	}
 	if l == nil {
 		return other == nil
 	}
-	T().Debugf("l.type=%s, l.data=%v", l.Car.Type(), l.Car.Data)
+	tracer().Debugf("l.type=%s, l.data=%v", l.Car.Type(), l.Car.Data)
 	if l != nil && l.Car.Type() == ConsType && l.Car.Data == nil {
 		return true
 	}
@@ -916,7 +892,7 @@ func (a Atom) Match(other Atom, env *Environment) bool {
 }
 
 func matchAtom(atom Atom, otherAtom Atom, env *Environment) bool {
-	T().Debugf("Match Atom: %v vs %v", atom, otherAtom)
+	tracer().Debugf("Match Atom: %v vs %v", atom, otherAtom)
 	if atom == NilAtom {
 		return otherAtom == NilAtom
 	}
@@ -941,10 +917,10 @@ func bindSymbol(symatom Atom, value Atom, env *Environment) bool {
 	if !ok {
 		return false
 	}
-	T().Debugf("binding symbol %s to %s", sym.String(), value.String())
+	tracer().Debugf("binding symbol %s to %s", sym.String(), value.String())
 	if sym.Value.IsNil() {
 		sym.Value = Elem(value) // bind it
-		T().Debugf("bound symbol %s", sym.String())
+		tracer().Debugf("bound symbol %s", sym.String())
 		return true
 	}
 	if !sym.Value.IsAtom() {
@@ -961,7 +937,7 @@ func typeMatch(t1 AtomType, t2 AtomType) (bool, bool) {
 	if t1 == t2 {
 		return true, true
 	}
-	T().Debugf("No type match: %s vs %s", t1, t2)
+	tracer().Debugf("No type match: %s vs %s", t1, t2)
 	return false, true
 }
 

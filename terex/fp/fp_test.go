@@ -6,8 +6,6 @@ import (
 
 	"github.com/npillmayer/gorgo/terex"
 	"github.com/npillmayer/gorgo/terex/fp"
-	"github.com/npillmayer/schuko/gtrace"
-	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 )
 
@@ -101,12 +99,11 @@ func TestListSeq(t *testing.T) {
 }
 
 func TestTreeTraverse1(t *testing.T) {
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	defer teardown()
+	//
 	tree := makeTree()
 	t.Logf("tree = %s", tree.ListString())
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
 	i := 0
 	for node := range fp.TreeDepthFirstCh(makeTree()) {
 		t.Logf("node=%s", node)
@@ -118,12 +115,11 @@ func TestTreeTraverse1(t *testing.T) {
 }
 
 func TestTreeTraverse2(t *testing.T) {
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	defer teardown()
+	//
 	tree := makeTree()
 	t.Logf("tree = %s", tree.ListString())
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 	l := fp.Traverse(tree, fp.DepthFirstDir).List()
 	t.Logf("list = %s", l.ListString())
 	if l.ListString() != "(4 5 2 6 7 3 1)" {
@@ -132,12 +128,11 @@ func TestTreeTraverse2(t *testing.T) {
 }
 
 func TestTreeTraverse3(t *testing.T) {
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	defer teardown()
+	//
 	tree := makeTree()
 	t.Logf("tree = %s", tree.ListString())
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 	l := fp.Traverse(tree, fp.TopDownDir).List()
 	t.Logf("list = %s", l.ListString())
 	if l.ListString() != "(1 2 4 5 3 6 7)" {
@@ -146,12 +141,11 @@ func TestTreeTraverse3(t *testing.T) {
 }
 
 func TestTreeRange(t *testing.T) {
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	defer teardown()
+	//
 	tree := makeTree()
 	t.Logf("tree = %s", tree.ListString())
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 	nodes := make([]fp.TreeNode, 0, 7)
 	for node := range fp.Traverse(tree, fp.DepthFirstDir).Range() {
 		nodes = append(nodes, node)
@@ -163,12 +157,11 @@ func TestTreeRange(t *testing.T) {
 }
 
 func TestTreeFilter(t *testing.T) {
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	defer teardown()
+	//
 	tree := makeTree()
 	t.Logf("tree = %s", tree.ListString())
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 	count = 0
 	l := fp.Traverse(tree, fp.DepthFirstDir).Where(fp.IsLeaf()).Map(counter).List()
 	t.Logf("list = %s", l.ListString())

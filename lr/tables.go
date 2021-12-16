@@ -65,7 +65,7 @@ func (ga *LRAnalysis) gotoSet(closure *iteratable.Set, A *Symbol) (*iteratable.S
 		i := asItem(x)
 		if i.PeekSymbol() == A {
 			ii := i.Advance()
-			T().Debugf("goto(%s) -%s-> %s", i, A, ii)
+			tracer().Debugf("goto(%s) -%s-> %s", i, A, ii)
 			gotoset.Add(ii)
 		}
 	}
@@ -78,7 +78,7 @@ func (ga *LRAnalysis) gotoSetClosure(i *iteratable.Set, A *Symbol) (*iteratable.
 	//T().Infof("gotoset  = %v", gotoset)
 	gclosure := ga.closureSet(gotoset)
 	//T().Infof("gclosure = %v", gclosure)
-	T().Debugf("goto(%s) --%s--> %s", itemSetString(i), A, itemSetString(gclosure))
+	tracer().Debugf("goto(%s) --%s--> %s", itemSetString(i), A, itemSetString(gclosure))
 	return gclosure, A
 }
 
@@ -100,9 +100,9 @@ type cfsmEdge struct {
 
 // Dump is a debugging helper
 func (s *CFSMState) Dump() {
-	T().Debugf("--- state %03d -----------", s.ID)
+	tracer().Debugf("--- state %03d -----------", s.ID)
 	Dump(s.items)
-	T().Debugf("-------------------------")
+	tracer().Debugf("-------------------------")
 }
 
 func (s *CFSMState) isErrorState() bool {
@@ -254,7 +254,7 @@ func (lrgen *TableGenerator) CFSM() *CFSM {
 // BuildGotoTable(...).)
 func (lrgen *TableGenerator) GotoTable() *sparse.IntMatrix {
 	if lrgen.gototable == nil {
-		T().P("lr", "gen").Errorf("tables not yet initialized")
+		tracer().P("lr", "gen").Errorf("tables not yet initialized")
 	}
 	return lrgen.gototable
 }
@@ -264,7 +264,7 @@ func (lrgen *TableGenerator) GotoTable() *sparse.IntMatrix {
 // BuildSLR1ActionTable(...).)
 func (lrgen *TableGenerator) ActionTable() *sparse.IntMatrix {
 	if lrgen.actiontable == nil {
-		T().P("lr", "gen").Errorf("tables not yet initialized")
+		tracer().P("lr", "gen").Errorf("tables not yet initialized")
 	}
 	return lrgen.actiontable
 }
@@ -280,7 +280,7 @@ func (lrgen *TableGenerator) CreateTables() {
 // Clients have to call CreateTables() first.
 func (lrgen *TableGenerator) AcceptingStates() []int {
 	if lrgen.dfa == nil {
-		T().Errorf("tables not yet generated; call CreateTables() first")
+		tracer().Errorf("tables not yet generated; call CreateTables() first")
 		return nil
 	}
 	acc := make([]int, 0, 3)
@@ -303,15 +303,15 @@ func (lrgen *TableGenerator) AcceptingStates() []int {
 
 // Construct the characteristic finite state machine CFSM for a grammar.
 func (lrgen *TableGenerator) buildCFSM() *CFSM {
-	T().Debugf("=== build CFSM ==================================================")
+	tracer().Debugf("=== build CFSM ==================================================")
 	G := lrgen.g
 	cfsm := emptyCFSM(G)
 	closure0 := lrgen.ga.closure(StartItem(G.rules[0]))
 	item, sym := StartItem(G.rules[0])
-	T().Debugf("Start item=%v/%v", item, sym)
-	T().Debugf("----------")
+	tracer().Debugf("Start item=%v/%v", item, sym)
+	tracer().Debugf("----------")
 	Dump(closure0)
-	T().Debugf("----------")
+	tracer().Debugf("----------")
 	cfsm.S0 = cfsm.addState(closure0)
 	cfsm.S0.Dump()
 	S := treeset.NewWith(stateComparator)
@@ -320,7 +320,7 @@ func (lrgen *TableGenerator) buildCFSM() *CFSM {
 		s := S.Values()[0].(*CFSMState)
 		S.Remove(s)
 		G.EachSymbol(func(A *Symbol) interface{} {
-			T().Debugf("checking goto-set for symbol = %v", A)
+			tracer().Debugf("checking goto-set for symbol = %v", A)
 			gotoset, _ := lrgen.ga.gotoSetClosure(s.items, A)
 			snew := cfsm.findStateByItems(gotoset)
 			if snew == nil {
@@ -338,7 +338,7 @@ func (lrgen *TableGenerator) buildCFSM() *CFSM {
 			snew.Dump()
 			return nil
 		})
-		T().Debugf("-----------------------------------------------------------------")
+		tracer().Debugf("-----------------------------------------------------------------")
 	}
 	return cfsm
 }
@@ -390,7 +390,7 @@ func (lrgen *TableGenerator) BuildGotoTable() *sparse.IntMatrix {
 		}
 		return nil
 	})
-	T().Infof("GOTO table of size %d x %d", statescnt, maxtok)
+	tracer().Infof("GOTO table of size %d x %d", statescnt, maxtok)
 	gototable := sparse.NewIntMatrix(statescnt, maxtok, sparse.DefaultNullValue)
 	states := lrgen.dfa.states.Iterator()
 	for states.Next() {
@@ -408,7 +408,7 @@ func (lrgen *TableGenerator) BuildGotoTable() *sparse.IntMatrix {
 // GotoTableAsHTML exports a GOTO-table in HTML-format.
 func GotoTableAsHTML(lrgen *TableGenerator, w io.Writer) {
 	if lrgen.gototable == nil {
-		T().Errorf("GOTO table not yet created, cannot export to HTML")
+		tracer().Errorf("GOTO table not yet created, cannot export to HTML")
 		return
 	}
 	parserTableAsHTML(lrgen, "GOTO", lrgen.gototable, w)
@@ -417,7 +417,7 @@ func GotoTableAsHTML(lrgen *TableGenerator, w io.Writer) {
 // ActionTableAsHTML exports the SLR(1) ACTION-table in HTML-format.
 func ActionTableAsHTML(lrgen *TableGenerator, w io.Writer) {
 	if lrgen.actiontable == nil {
-		T().Errorf("ACTION table not yet created, cannot export to HTML")
+		tracer().Errorf("ACTION table not yet created, cannot export to HTML")
 		return
 	}
 	parserTableAsHTML(lrgen, "ACTION", lrgen.actiontable, w)
@@ -468,7 +468,7 @@ func parserTableAsHTML(lrgen *TableGenerator, tname string, table *sparse.IntMat
 // lookahead included. This method is provided as an add-on.
 func (lrgen *TableGenerator) BuildLR0ActionTable() (*sparse.IntMatrix, bool) {
 	statescnt := lrgen.dfa.states.Size()
-	T().Infof("ACTION.0 table of size %d x 1", statescnt)
+	tracer().Infof("ACTION.0 table of size %d x 1", statescnt)
 	actions := sparse.NewIntMatrix(statescnt, 1, sparse.DefaultNullValue)
 	return lrgen.buildActionTable(actions, false)
 }
@@ -485,7 +485,7 @@ func (lrgen *TableGenerator) BuildSLR1ActionTable() (*sparse.IntMatrix, bool) {
 		}
 		return nil
 	})
-	T().Infof("ACTION.1 table of size %d x %d", statescnt, maxtok)
+	tracer().Infof("ACTION.1 table of size %d x %d", statescnt, maxtok)
 	actions := sparse.NewIntMatrix(statescnt, maxtok, sparse.DefaultNullValue)
 	return lrgen.buildActionTable(actions, true)
 }
@@ -512,21 +512,21 @@ func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bo
 	states := lrgen.dfa.states.Iterator()
 	for states.Next() {
 		state := states.Value().(*CFSMState)
-		T().Debugf("--- state %d --------------------------------", state.ID)
+		tracer().Debugf("--- state %d --------------------------------", state.ID)
 		for _, v := range state.items.Values() {
-			T().Debugf("item in s%d = %v", state.ID, v)
+			tracer().Debugf("item in s%d = %v", state.ID, v)
 			i := asItem(v)
 			A := i.PeekSymbol()
 			prefix := i.Prefix()
-			T().Debugf("symbol at dot = %v, prefix = %v", A, prefix)
+			tracer().Debugf("symbol at dot = %v, prefix = %v", A, prefix)
 			if A != nil && A.IsTerminal() { // create a shift entry
 				P := pT(state, A)
-				T().Debugf("    creating action entry --%v--> %d", A, P)
+				tracer().Debugf("    creating action entry --%v--> %d", A, P)
 				if slr1 {
 					if a1 := actions.Value(state.ID, A.Token()); a1 != actions.NullValue() {
-						T().Debugf("    %s is 2nd action", valstring(int32(P), actions))
+						tracer().Debugf("    %s is 2nd action", valstring(int32(P), actions))
 						if a1 == ShiftAction {
-							T().Debugf("    relax, double shift")
+							tracer().Debugf("    relax, double shift")
 						} else {
 							hasConflicts = true
 							actions.Add(state.ID, A.Token(), int32(P))
@@ -534,7 +534,7 @@ func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bo
 					} else {
 						actions.Add(state.ID, A.Token(), int32(P))
 					}
-					T().Debugf(actionEntry(state.ID, A.Token(), actions))
+					tracer().Debugf(actionEntry(state.ID, A.Token(), actions))
 				} else {
 					actions.Add(state.ID, 1, int32(P))
 				}
@@ -544,21 +544,21 @@ func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bo
 				if inx >= 0 {                                       // found => create a reduce entry
 					if slr1 {
 						lookaheads := lrgen.ga.Follow(rule.LHS)
-						T().Debugf("    Follow(%v) = %v", rule.LHS, lookaheads)
+						tracer().Debugf("    Follow(%v) = %v", rule.LHS, lookaheads)
 						laslice := lookaheads.AppendTo(nil)
 						//for _, la := range lookaheads {
 						for _, la := range laslice {
 							a1, a2 := actions.Values(state.ID, la)
 							if a1 != actions.NullValue() || a2 != actions.NullValue() {
-								T().Debugf("    %s is 2nd action", valstring(int32(inx), actions))
+								tracer().Debugf("    %s is 2nd action", valstring(int32(inx), actions))
 								hasConflicts = true
 							}
 							actions.Add(state.ID, la, int32(inx)) // reduce rule[inx]
-							T().Debugf("    creating reduce_%d action entry @ %v for %v", inx, la, rule)
-							T().Debugf(actionEntry(state.ID, la, actions))
+							tracer().Debugf("    creating reduce_%d action entry @ %v for %v", inx, la, rule)
+							tracer().Debugf(actionEntry(state.ID, la, actions))
 						}
 					} else {
-						T().Debugf("    creating reduce_%d action entry for %v", inx, rule)
+						tracer().Debugf("    creating reduce_%d action entry for %v", inx, rule)
 						actions.Add(state.ID, 1, int32(inx)) // reduce rule[inx]
 					}
 				}

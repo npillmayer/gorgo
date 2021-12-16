@@ -1,38 +1,14 @@
 package terex
 
 /*
-BSD License
+License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+*/
 
 import (
 	"bytes"
@@ -228,7 +204,7 @@ func NewEnvironment(name string, parent *Environment) *Environment {
 func (env *Environment) Defn(opname string, funcBody Mapper) *Symbol {
 	opsym := env.Intern(opname, false)
 	opsym.Value = Elem(&internalOp{sym: opsym, call: funcBody})
-	T().Debugf("new interal op %s = %v", opsym.Name, opsym.Value)
+	tracer().Debugf("new interal op %s = %v", opsym.Name, opsym.Value)
 	return opsym
 }
 
@@ -236,7 +212,7 @@ func (env *Environment) Defn(opname string, funcBody Mapper) *Symbol {
 func (env *Environment) Def(symname string, value Element) *Symbol {
 	sym := env.Intern(symname, false)
 	sym.Value = value
-	T().Debugf("new interal sym %s = %v", sym.Name, sym.Value)
+	tracer().Debugf("new interal sym %s = %v", sym.Name, sym.Value)
 	return sym
 }
 

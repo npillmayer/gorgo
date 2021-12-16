@@ -7,38 +7,13 @@ import (
 )
 
 /*
-BSD License
+License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
+*/
 
 func (env *Environment) Eval(list *GCons) *GCons {
 	r := Eval(Elem(list), env)
@@ -60,11 +35,11 @@ func Eval(el Element, env *Environment) Element {
 			T().Errorf("   reconstucted %v", tee.String())
 			return Elem(tee)
 		} */
-		T().Debugf("eval of atom %v", el.AsAtom())
+		tracer().Debugf("eval of atom %v", el.AsAtom())
 		return evalAtom(el.AsAtom(), env)
 	}
 	list := el.AsList()
-	T().Debugf("eval of list %v", list.ListString())
+	tracer().Debugf("eval of list %v", list.ListString())
 	l := evalList(list, env)
 	return l
 }
@@ -81,16 +56,16 @@ func evalList(list *GCons, env *Environment) Element {
 		verblist := list.Map(EvalAtom, env) // ⇒ accept it
 		return Elem(verblist)               // and return non-operated list
 	}
-	T().Debugf("-------- op=%s -----------", car.String())
+	tracer().Debugf("-------- op=%s -----------", car.String())
 	operator := car.AsAtom().Data.(Operator)
 	//T().Debugf("OP = %s", operator)
 	//args := list.Cdr.Map(Eval, env)
 	args := Elem(list.Cdr)
-	T().Debugf("--- %s.call%v", operator.String(), args.String())
+	tracer().Debugf("--- %s.call%v", operator.String(), args.String())
 	ev := operator.Call(args, env)
-	T().Debugf("list eval result:")
+	tracer().Debugf("list eval result:")
 	ev.Dump(tracing.LevelDebug)
-	T().Debugf("--------------------------")
+	tracer().Debugf("--------------------------")
 	return ev
 }
 
@@ -100,7 +75,7 @@ func EvalAtom(atom Element, env *Environment) Element {
 
 func evalAtom(atom Atom, env *Environment) Element {
 	resolved, _ := resolve(atom, env, false)
-	T().Debugf("%s resolved -> %v", atom, resolved)
+	tracer().Debugf("%s resolved -> %v", atom, resolved)
 	if resolved.IsNil() || atom.typ == VarType || resolved.Type() != ConsType {
 		return resolved
 	}
@@ -132,15 +107,15 @@ func (dsr DefaultSymbolResolver) Resolve(atom Atom, env *Environment, asOp bool)
 		atomSym := atom.Data.(*Symbol)
 		sym := env.FindSymbol(atomSym.Name, true)
 		if sym == nil {
-			T().Errorf("Unable to resolve symbol '%s' in environment", atomSym.Name)
-			err := fmt.Errorf("Unable to resolve symbol '%s' in environment", atomSym.Name)
+			tracer().Errorf("Unable to resolve symbol '%s' in environment", atomSym.Name)
+			err := fmt.Errorf("unable to resolve symbol '%s' in environment", atomSym.Name)
 			env.Error(err)
 			return Elem(atom), err
 		}
 		value := sym.Value
 		if asOp && sym.ValueType() != OperatorType {
 			env.lastError = fmt.Errorf("Symbol '%s' cannot be resolved as operator", sym.Name)
-			T().Errorf("Symbol '%s' cannot be resolved as operator", sym.Name)
+			tracer().Errorf("Symbol '%s' cannot be resolved as operator", sym.Name)
 			err := fmt.Errorf("Symbol '%s' cannot be resolved as operator", sym.Name)
 			env.Error(err)
 			return Elem(nil), err
@@ -149,7 +124,7 @@ func (dsr DefaultSymbolResolver) Resolve(atom Atom, env *Environment, asOp bool)
 	}
 	if asOp { // atom is neither a symbol nor an operator, but operator expected
 		env.lastError = fmt.Errorf("Atom '%s' cannot be cast to operator ", atom)
-		T().Errorf("Atom '%s' cannot be cast to operator ", atom)
+		tracer().Errorf("Atom '%s' cannot be cast to operator ", atom)
 		err := fmt.Errorf("Atom '%s' cannot be cast to operator ", atom)
 		env.Error(err)
 		return Elem(nil), err

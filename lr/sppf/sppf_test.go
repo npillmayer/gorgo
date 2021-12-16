@@ -13,10 +13,9 @@ import (
 )
 
 func TestSignature(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	b := lr.NewGrammarBuilder("G")
 	b.LHS("S").N("A").End()
 	b.LHS("A").N("B").End()
@@ -43,9 +42,9 @@ func TestSignature(t *testing.T) {
 }
 
 func TestSigma(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := lr.NewGrammarBuilder("G")
 	b.LHS("S").T("<", '<').N("A").N("Z").T(">", '>').End()
 	g, _ := b.Grammar()
@@ -63,9 +62,9 @@ func TestSigma(t *testing.T) {
 // S  ⟶ A
 // A  ⟶ a
 func TestSPPFInsert(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := lr.NewGrammarBuilder("G")
 	b.LHS("S").N("A").End()
 	r2 := b.LHS("A").T("a", scanner.Ident).End()
@@ -90,9 +89,9 @@ func TestSPPFInsert(t *testing.T) {
 // A  ⟶ a
 // B  ⟶ a
 func TestSPPFAmbiguous(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := lr.NewGrammarBuilder("G")
 	b.LHS("S").N("A").End()
 	b.LHS("S").N("B").End()
@@ -111,9 +110,9 @@ func TestSPPFAmbiguous(t *testing.T) {
 // S  ⟶ A
 // A  ⟶ a
 func TestTraverse(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := lr.NewGrammarBuilder("G")
 	r1 := b.LHS("S").N("A").End()
 	r2 := b.LHS("A").T("a", scanner.Ident).End()

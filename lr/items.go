@@ -92,7 +92,7 @@ func Dump(iset *iteratable.Set) {
 	items := iset.Values()
 	//T().Debug("--- item set ------------")
 	for k, i := range items {
-		T().Debugf("item %2d = %v", k, i)
+		tracer().Debugf("item %2d = %v", k, i)
 	}
 	//T().Debug("-------------------------")
 }

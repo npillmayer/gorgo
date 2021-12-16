@@ -15,11 +15,9 @@ import (
 )
 
 func TestSLR1(t *testing.T) {
-	//gtrace.SyntaxTracer = gologadapter.New()
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	//
 	b := lr.NewGrammarBuilder("G1")
 	b.LHS("S").T("a", scanner.Ident).End()
 	g, err := b.Grammar()
@@ -30,11 +28,9 @@ func TestSLR1(t *testing.T) {
 }
 
 func TestSLR2(t *testing.T) {
-	//gtrace.SyntaxTracer = gologadapter.New()
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	//
 	b := lr.NewGrammarBuilder("G2")
 	b.LHS("S").T("a", scanner.Ident).End()
 	b.LHS("S").Epsilon()
@@ -46,11 +42,9 @@ func TestSLR2(t *testing.T) {
 }
 
 func TestSLR3(t *testing.T) {
-	//gtrace.SyntaxTracer = gologadapter.New()
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	//
 	b := lr.NewGrammarBuilder("G3")
 	b.LHS("S").N("A").T("a", scanner.Ident).End()
 	b.LHS("A").T("+", '+').End()

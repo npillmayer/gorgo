@@ -25,10 +25,9 @@ http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=A6FB43374BBE6D3041EF573
 */
 func TestGLR1(t *testing.T) {
 	//gtrace.SyntaxTracer = gologadapter.New()
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	//
 	b := lr.NewGrammarBuilder("G1")
 	b.LHS("S").N("A").T("-", '-').End()
 	b.LHS("S").T("+", '+').N("B").End()

@@ -47,39 +47,16 @@ an interesting approach to view parsing as path-finding in graphs,
 by Keshav Pingali and Gianfranco Bilardi
 (https://apps.cs.utexas.edu/tech_reports/reports/tr/TR-2102.pdf).
 
+___________________________________________________________________________
 
-BSD License
+License
 
-Copyright (c) 2019–21, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+*/
 package earley
 
 import (
@@ -91,13 +68,12 @@ import (
 	"github.com/npillmayer/gorgo/lr/iteratable"
 	"github.com/npillmayer/gorgo/lr/scanner"
 	"github.com/npillmayer/gorgo/lr/sppf"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 )
 
-// T traces to the global syntax tracer.
-func T() tracing.Trace {
-	return gtrace.SyntaxTracer
+// tracer traces with key 'gorgo.lr'.
+func tracer() tracing.Trace {
+	return tracing.Select("gorgo.lr")
 }
 
 // Parser is an Earley-parser type. Create and initialize one with earley.NewParser(...)
@@ -177,7 +153,7 @@ func (p *Parser) Parse(scan scanner.Tokenizer, listener Listener) (accept bool, 
 	p.states[0].Add(startItem)                           // S0 = { [S′→•S, 0] }
 	tokval, token, start, len := p.scanner.NextToken(scanner.AnyToken)
 	for { // outer loop over Si per input token xi
-		T().Debugf("Scanner read '%v|%d' @ %d", token, tokval, start)
+		tracer().Debugf("Scanner read '%v|%d' @ %d", token, tokval, start)
 		x := inputSymbol{tokval, token, lr.Span{start, start + len}}
 		i := p.setupNextState(token)
 		p.innerLoop(i, x)
@@ -293,7 +269,7 @@ func (p *Parser) checkAccept() bool {
 	for S.Next() {
 		item := S.Item().(lr.Item)
 		if item.PeekSymbol() == nil && item.Rule().LHS == p.ga.Grammar().Rule(0).LHS {
-			T().Debugf("ACCEPT: %s", item)
+			tracer().Debugf("ACCEPT: %s", item)
 			acc = true
 		}
 	}

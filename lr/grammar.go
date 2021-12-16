@@ -251,17 +251,17 @@ func (g *Grammar) resolveOrDefineTerminal(s string, tokval int) *Symbol {
 
 // Dump is a debugging helper: dump symbols and rules to stdout.
 func (g *Grammar) Dump() {
-	T().Debugf("--- %s --------------------------------------------\n", g.Name)
-	T().Debugf("epsilon  = %d\n", g.Epsilon.Value)
-	T().Debugf("EOF      = %d\n", g.EOF.Value)
+	tracer().Debugf("--- %s --------------------------------------------\n", g.Name)
+	tracer().Debugf("epsilon  = %d\n", g.Epsilon.Value)
+	tracer().Debugf("EOF      = %d\n", g.EOF.Value)
 	for _, A := range g.nonterminals {
-		T().Debugf("N  %v = %d\n", A, A.Value)
+		tracer().Debugf("N  %v = %d\n", A, A.Value)
 	}
 	for _, A := range g.terminals {
-		T().Debugf("T  %v = %d\n", A, A.Token())
+		tracer().Debugf("T  %v = %d\n", A, A.Token())
 	}
 	for _, r := range g.rules {
-		T().Debugf("%3d: %s\n", r.Serial, r.String())
+		tracer().Debugf("%3d: %s\n", r.Serial, r.String())
 	}
-	T().Debugf("-------------------------------------------------------")
+	tracer().Debugf("-------------------------------------------------------")
 }

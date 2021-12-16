@@ -44,7 +44,7 @@ func (rnode *RuleNode) Symbol() *lr.Symbol {
 // It uses a listener, which gets called for every terminal and for every
 // non-terminal reduction.
 func (p *Parser) WalkDerivation(listener Listener) *RuleNode {
-	T().Debugf("=== Walk ===============================")
+	tracer().Debugf("=== Walk ===============================")
 	var root *RuleNode
 	S := p.states[p.sc]
 	S.IterateOnce()
@@ -54,10 +54,10 @@ func (p *Parser) WalkDerivation(listener Listener) *RuleNode {
 			root = p.walk(item, p.sc, ruleset{}, listener, 0)
 		}
 	}
-	T().Debugf("========================================")
-	T().Debugf("TOKENS: %d", len(p.tokens))
+	tracer().Debugf("========================================")
+	tracer().Debugf("TOKENS: %d", len(p.tokens))
 	for i, t := range p.tokens {
-		T().Debugf("        [%d]=%v", i, t)
+		tracer().Debugf("        [%d]=%v", i, t)
 	}
 	return root
 }
@@ -125,7 +125,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 	listener Listener, level int) *RuleNode {
 	//
 	rhs := reverse(item.Rule().RHS()) // we iterate backwards over RHS symbols of item
-	T().Debugf("Walk from item=%s (%d…%d)", item, item.Origin, pos)
+	tracer().Debugf("Walk from item=%s (%d…%d)", item, item.Origin, pos)
 	extent := lr.Span{item.Origin, pos}
 	l := len(rhs)
 	ruleNodes := make([]*RuleNode, l) // we will collect |RHS| children nodes
@@ -135,10 +135,10 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		if n+1 == l { // this is the leftmost symbol in RHS ⇒ must match at item.Origin
 			leftmost = true
 		}
-		T().Debugf("Still working on item %v (%d…%d)", item, item.Origin, end)
-		T().Debugf("Next symbol in rev(RHS) is #%d:%s, pos=%d, end=%d", n, B, pos, end)
+		tracer().Debugf("Still working on item %v (%d…%d)", item, item.Origin, end)
+		tracer().Debugf("Next symbol in rev(RHS) is #%d:%s, pos=%d, end=%d", n, B, pos, end)
 		if B.IsTerminal() { // collect a terminal node
-			T().Infof("Tree node    %d: %s", pos-1, B)
+			tracer().Infof("Tree node    %d: %s", pos-1, B)
 			value := listener.Terminal(B.Value, p.tokens[pos], lr.Span{pos - 1, pos}, level+1)
 			ruleNodes[l-n-1] = &RuleNode{
 				sym:    B,
@@ -151,14 +151,14 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		// for each symbol B, find an item [B→…A•, k] which has completed it
 		S := p.states[pos]
 		cleanupState(S)
-		T().Debugf("Looking for item which completed %s from %d", B, pos)
+		tracer().Debugf("Looking for item which completed %s from %d", B, pos)
 		dumpState(p.states, pos)
-		T().Debugf("---------------------------------------------------")
+		tracer().Debugf("---------------------------------------------------")
 		R := S.Copy().Subset(func(el interface{}) bool {
 			jtem := el.(lr.Item)
 			return itemCompletes(jtem, B)
 		}) // now R contains all items [B→…A•, k]
-		T().Debugf("R=%s", itemSetString(R))
+		tracer().Debugf("R=%s", itemSetString(R))
 		switch R.Size() {
 		case 0: // cannot happen
 			if stuck(fmt.Sprintf("predecessor for item missing, parse is stuck: %v", item)) {
@@ -185,10 +185,10 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 			if pos == end {
 				h := hash(item, pos)
 				if pred, ok := p.backlinks[h]; ok {
-					T().Debugf("backlink  %v  <--  %v", pred, item)
+					tracer().Debugf("backlink  %v  <--  %v", pred, item)
 					backlink = pred
 					if !R.Contains(pred) {
-						T().Errorf("Backlink not present in R ?!?")
+						tracer().Errorf("Backlink not present in R ?!?")
 						panic("Backlink missing")
 					}
 				}
@@ -203,25 +203,25 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 				//T().Debugf("   rule = %v, item = %v, origin = %v", rule, item.Origin, rule.Origin)
 				if rule == backlink {
 					longest = rule
-					T().Debugf("backlink rule identified: %v", rule)
+					tracer().Debugf("backlink rule identified: %v", rule)
 					break
 				}
 				if pos == end {
 					// avoid looping with ancestor-rule = current rule
 					if trys.contains(rule.Rule(), rule.Origin) { // we tried this rule somewhere up in the derivation walk
-						T().Infof("skipping rule %v, already visited", rule)
+						tracer().Infof("skipping rule %v, already visited", rule)
 						continue // skip this rule
 					}
 					//if r, _ := trys.containsSibling(rule.Rule(), rule.Origin); false {
 					if r, found := trys.containsSibling(rule.Rule(), rule.Origin); found {
 						// alternative derivation present
-						T().Infof("skipping rule %v, sibling present: %v", rule, r)
+						tracer().Infof("skipping rule %v, sibling present: %v", rule, r)
 						continue // skip this rule
 					}
 				} else {
 					h := hash(rule, pos)
 					if subpred, ok := p.backlinks[h]; ok {
-						T().Debugf("sub-backlink  %v  <--  %v", subpred, rule)
+						tracer().Debugf("sub-backlink  %v  <--  %v", subpred, rule)
 						if sublong.Rule() == nil {
 							sublong = rule
 						} else if rule.Origin < sublong.Origin {
@@ -244,13 +244,13 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					// } else if len(rule.Prefix()) == len(longest.Prefix()) {
 					if longest.Rule() == nil {
 						longest = rule
-						T().Debugf("  new longest rule: %v", rule)
+						tracer().Debugf("  new longest rule: %v", rule)
 					} else if rule.Origin < longest.Origin {
 						longest = rule
-						T().Debugf("subst longest rule: %v", rule)
+						tracer().Debugf("subst longest rule: %v", rule)
 					} else if rule.Origin == longest.Origin && rule.Rule().Serial < longest.Rule().Serial {
 						longest = rule
-						T().Debugf(" prio longest rule: %v", rule)
+						tracer().Debugf(" prio longest rule: %v", rule)
 					}
 					// }
 				}
@@ -265,10 +265,10 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					return nil
 				}
 			}
-			T().Debugf("Selected rule %s", longest)
-			T().Debugf("Sub-Long rule %v", sublong)
+			tracer().Debugf("Selected rule %s", longest)
+			tracer().Debugf("Sub-Long rule %v", sublong)
 			if sublong.Rule() != nil && longest != sublong {
-				T().Errorf("decision point")
+				tracer().Errorf("decision point")
 			}
 			newtrys := try(pos, end, trys)
 			newtrys = newtrys.add(longest.Rule(), longest.Origin) // remember we tried this rule for this span
@@ -287,7 +287,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		Extent: extent,
 		Value:  value,
 	}
-	T().Infof("Tree node    %d|-----%s-----|%d", extent.From(), item.Rule().LHS.Name, extent.To())
+	tracer().Infof("Tree node    %d|-----%s-----|%d", extent.From(), item.Rule().LHS.Name, extent.To())
 	return node
 }
 
@@ -295,7 +295,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 
 func try(pos, end uint64, trys ruleset) ruleset {
 	if pos == end {
-		T().Debugf("putting in trys:")
+		tracer().Debugf("putting in trys:")
 		trys.dump()
 		return trys
 	}
@@ -320,7 +320,7 @@ func cleanupState(S *iteratable.Set) {
 }
 
 func stuck(msg string) bool {
-	T().Errorf(msg)
+	tracer().Errorf(msg)
 	if gconf.GetBool("panic-on-parser-stuck") {
 		panic(`Earley-parser is stuck.
 

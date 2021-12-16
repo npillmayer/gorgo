@@ -51,45 +51,21 @@ Warning
 This is a very early implementation. Currently you should use it for study purposes
 only. The API may change significantly without prior notice.
 
+___________________________________________________________________________
 
-BSD License
+License
 
-Copyright (c) 2017–20, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+*/
 package slr
 
 import (
 	"fmt"
 
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 
 	"github.com/npillmayer/gorgo/lr"
@@ -97,9 +73,9 @@ import (
 	"github.com/npillmayer/gorgo/lr/sparse"
 )
 
-// T traces to the global SyntaxTracer.
-func T() tracing.Trace {
-	return gtrace.SyntaxTracer
+// tracer traces with key 'gorgo.lr'.
+func tracer() tracing.Trace {
+	return tracing.Select("gorgo.lr")
 }
 
 // Parser is an SLR(1)-parser type. Create and initialize one with slr.NewParser(...)
@@ -145,9 +121,9 @@ func NewParser(g *lr.Grammar, gotoTable *sparse.IntMatrix, actionTable *sparse.I
 //
 // The parser returns true if the input string has been accepted.
 func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
-	T().Debugf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+	tracer().Debugf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 	if p.G == nil || p.gotoT == nil {
-		T().Errorf("SLR(1)-parser not initialized")
+		tracer().Errorf("SLR(1)-parser not initialized")
 		return false, fmt.Errorf("SLR(1)-parser not initialized")
 	}
 	var accepting bool
@@ -159,10 +135,10 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 		if token == nil {
 			tokval = scanner.EOF
 		}
-		T().Debugf("got token %s/%d from scanner", token, tokval)
+		tracer().Debugf("got token %s/%d from scanner", token, tokval)
 		state := p.stack[len(p.stack)-1] // TOS
 		action := p.actionT.Value(state.stateID, tokval)
-		T().Debugf("action(%d,%d)=%s", state.stateID, tokval, valstring(action, p.actionT))
+		tracer().Debugf("action(%d,%d)=%s", state.stateID, tokval, valstring(action, p.actionT))
 		if action == p.actionT.NullValue() {
 			return false, fmt.Errorf("Syntax error at %d/%v", tokval, token)
 		}
@@ -171,7 +147,7 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 			// TODO patch start symbol to have span(0,pos)
 		} else if action == lr.ShiftAction {
 			nextstate := int(p.gotoT.Value(state.stateID, tokval))
-			T().Debugf("shifting, next state = %d", nextstate)
+			tracer().Debugf("shifting, next state = %d", nextstate)
 			p.stack = append(p.stack, // push a terminal state onto stack
 				stackitem{nextstate, tokval, span{pos, pos + length - 1}})
 			tokval, token, pos, length = scan.NextToken(nil)
@@ -181,7 +157,7 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 			if handlespan.isNull() { // resulted from an epsilon production
 				handlespan = span{pos - 1, pos - 1} // epsilon was just before lookahead
 			}
-			T().Debugf("reduced to next state = %d", nextstate)
+			tracer().Debugf("reduced to next state = %d", nextstate)
 			p.stack = append(p.stack, // push a non-terminal state onto stack
 				stackitem{nextstate, rule.LHS.Value, handlespan})
 		} else { // no action found
@@ -202,14 +178,14 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 // TODO: perform semantic action on reduce, either by calling a user-provided
 // function from the grammar, or by constructing a node in a parse tree/forest.
 func (p *Parser) reduce(stateID int, rule *lr.Rule) (int, span) {
-	T().Infof("reduce %v", rule)
+	tracer().Infof("reduce %v", rule)
 	handle := reverse(rule.RHS())
 	var handlespan span
 	for _, sym := range handle {
 		p.stack = p.stack[:len(p.stack)-1] // pop TOS
 		tos := p.stack[len(p.stack)-1]
 		if tos.symID != sym.Value {
-			T().Errorf("Expected %v on top of stack, got %d", sym, tos.symID)
+			tracer().Errorf("Expected %v on top of stack, got %d", sym, tos.symID)
 		}
 		handlespan = handlespan.extendFrom(tos.span)
 	}

@@ -16,10 +16,9 @@ import (
 var graphviz bool
 
 func TestBuilder1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").N("A").End()
 	g, err := b.Grammar()
@@ -33,10 +32,9 @@ func TestBuilder1(t *testing.T) {
 }
 
 func TestBuilder2(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").Epsilon()
 	g, err := b.Grammar()
@@ -46,10 +44,9 @@ func TestBuilder2(t *testing.T) {
 }
 
 func TestClosure1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	r1 := b.LHS("S").N("E").End()
 	r2 := b.LHS("E").N("E").T("+", 1).N("E").End()
@@ -68,10 +65,9 @@ func TestClosure1(t *testing.T) {
 }
 
 func TestSet1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	set1 := &intsets.Sparse{}
 	set2 := &intsets.Sparse{}
 	set1.Insert(1)
@@ -79,12 +75,12 @@ func TestSet1(t *testing.T) {
 	set1.Insert(9)
 	var set3 = &intsets.Sparse{}
 	set3.Copy(set1)
-	t.Logf("set 1 = %s", set1)
+	t.Logf("set 1 = %s of length %d", set1, set1.Len())
 	set2.Insert(1)
 	set2.Insert(2)
-	t.Logf("set 2 = %s", set2)
+	t.Logf("set 2 = %s of length %d", set2, set2.Len())
 	if set1.UnionWith(set2) {
-		t.Errorf("set 1 not expected to change, is now %s", set1)
+		t.Errorf("set 1 not expected to change, is now %s of length %d", set1, set1.Len())
 	}
 	if set1.Equals(set3) {
 		t.Logf("however, set 1 is unchanged")
@@ -93,10 +89,9 @@ func TestSet1(t *testing.T) {
 }
 
 func TestClosure2(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("E").N("E").T("+", '+').N("E").End()
 	b.LHS("E").N("T").End()
@@ -122,10 +117,9 @@ func TestClosure2(t *testing.T) {
 }
 
 func TestItemSetEquality(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	r0 := b.LHS("S").N("E").End()
 	b.LHS("E").N("E").T("+", 1).T("(", 2).N("E").T(")", 3).End()
@@ -142,10 +136,9 @@ func TestItemSetEquality(t *testing.T) {
 }
 
 func TestClosure4(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	r0 := b.LHS("S").N("E").End()
 	b.LHS("E").N("E").T("+", 1).T("(", 2).N("E").T(")", 3).End()
@@ -160,10 +153,9 @@ func TestClosure4(t *testing.T) {
 }
 
 func TestStateRetrieval(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	r0 := b.LHS("S").N("E").End()
 	b.LHS("E").N("E").T("+", 1).T("(", 2).N("E").T(")", 3).End()
@@ -181,10 +173,9 @@ func TestStateRetrieval(t *testing.T) {
 }
 
 func TestBuildCFSM(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").N("E").End()
 	b.LHS("E").N("E").T("+", 1).T("(", 2).N("E").T(")", 3).End()
@@ -197,10 +188,9 @@ func TestBuildCFSM(t *testing.T) {
 }
 
 func TestDerivesEps(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").N("E").End()
 	b.LHS("E").N("T").T("a", 1).End()
@@ -212,7 +202,7 @@ func TestDerivesEps(t *testing.T) {
 	ga.markEps()
 	cnt := 0
 	g.EachSymbol(func(A *Symbol) interface{} {
-		T().Debugf("%v => eps  : %v", A, ga.derivesEps[A])
+		tracer().Debugf("%v => eps  : %v", A, ga.derivesEps[A])
 		if ga.derivesEps[A] {
 			cnt++
 		}
@@ -224,10 +214,9 @@ func TestDerivesEps(t *testing.T) {
 }
 
 func TestFirstSet(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").N("E").End()
 	b.LHS("E").N("T").End()
@@ -240,15 +229,14 @@ func TestFirstSet(t *testing.T) {
 	ga.markEps()
 	ga.initFirstSets()
 	for key, value := range ga.firstSets {
-		T().Debugf("key = %v     value = %v", key, value)
+		tracer().Debugf("key = %v     value = %v", key, value)
 	}
 }
 
 func TestFollowSet(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").N("A").T("a", 1).End()
 	b.LHS("A").N("B").N("D").End()
@@ -273,23 +261,22 @@ func TestFollowSet(t *testing.T) {
 	ga.initFirstSets()
 	ga.Grammar().EachNonTerminal( // supply a mapper function
 		func(A *Symbol) interface{} {
-			T().Debugf("FIRST(%v) = %v", A, ga.First(A))
+			tracer().Debugf("FIRST(%v) = %v", A, ga.First(A))
 			return nil
 		})
-	T().Debugf("-------")
+	tracer().Debugf("-------")
 	ga.initFollowSets()
 	ga.Grammar().EachNonTerminal(
 		func(A *Symbol) interface{} {
-			T().Debugf("FOLLOW(%v) = %v", A, ga.Follow(A))
+			tracer().Debugf("FOLLOW(%v) = %v", A, ga.Follow(A))
 			return nil
 		})
 }
 
 func TestGotoTable(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").N("A").EOF()
 	b.LHS("A").T("a", 1).End()
@@ -303,16 +290,15 @@ func TestGotoTable(t *testing.T) {
 	if graphviz {
 		lrgen.CFSM().CFSM2GraphViz("/tmp/cfsm.dot")
 		tmp, _ := ioutil.TempFile("", "lr_")
-		T().Infof("writing HTML to %s", tmp.Name())
+		tracer().Infof("writing HTML to %s", tmp.Name())
 		GotoTableAsHTML(lrgen, tmp)
 	}
 }
 
 func TestActionTable(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G")
 	b.LHS("S").N("A").EOF()
 	b.LHS("A").T("a", 1).End()
@@ -322,9 +308,9 @@ func TestActionTable(t *testing.T) {
 	ga := Analysis(g)
 	lrgen := NewTableGenerator(ga)
 	lrgen.dfa = lrgen.buildCFSM()
-	T().Debugf("\n---------- Action 0 -----------------------------------")
+	tracer().Debugf("\n---------- Action 0 -----------------------------------")
 	lrgen.actiontable, _ = lrgen.BuildLR0ActionTable()
-	T().Debugf("\n---------- Action 1 -----------------------------------")
+	tracer().Debugf("\n---------- Action 1 -----------------------------------")
 	lrgen.actiontable, _ = lrgen.BuildSLR1ActionTable()
 	/*
 		tmp, _ := ioutil.TempFile("", "lr_")
@@ -340,10 +326,9 @@ func TestActionTable(t *testing.T) {
 // }
 
 func TestCraftingG2(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G2")
 	b.LHS("S").N("A").EOF()
 	b.LHS("A").T("a", scanner.Ident).End()
@@ -363,10 +348,9 @@ func TestCraftingG2(t *testing.T) {
 }
 
 func TestTerminals1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G6")
 	b.LHS("S").T("(", '(').N("A").T(")", ')').EOF()
 	b.LHS("A").T("a", scanner.Ident).End()
@@ -387,10 +371,9 @@ func TestTerminals1(t *testing.T) {
 }
 
 func TestExercise1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("E6")
 	b.LHS("S").N("A").T("a", scanner.Ident).End()
 	b.LHS("A").N("B").N("D").End()
@@ -427,10 +410,9 @@ func TestExercise1(t *testing.T) {
 }
 
 func TestGrammar7(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := NewGrammarBuilder("G7")
 	b.LHS("S'").N("S").EOF()
 	b.LHS("S").N("A").T("a", scanner.Ident).End()

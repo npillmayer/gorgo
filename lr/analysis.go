@@ -188,13 +188,13 @@ func (ga *LRAnalysis) initFollowSets() {
 	for changed {
 		changed = false
 		for _, r := range ga.g.rules {
-			T().Debugf("rule  %v", r)
+			tracer().Debugf("rule  %v", r)
 			A := r.LHS                // look for A -> ... B y
 			for k, B := range r.rhs { // look for non-terms in RHS of r
 				if !B.IsTerminal() {
 					y := r.rhs[k+1:]
-					T().Debugf("      %v in RHS(%v),  y = %v", B, A, y)
-					T().Debugf("      y = %v", y)
+					tracer().Debugf("      %v in RHS(%v),  y = %v", B, A, y)
+					tracer().Debugf("      y = %v", y)
 					yfirst := ga.computeFirst(y)
 					//ch := ga.followSets.SetFor(B).UnionWith(withoutEps(yfirst)) // bug in intesets.UnionWith()
 					l := ga.followSets.SetFor(B).Len()

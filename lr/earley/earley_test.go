@@ -51,10 +51,12 @@ func makeGrammar(t *testing.T) *lr.LRAnalysis {
 }
 
 func makeParser(t *testing.T, test string, input string) (*Parser, scanner.Tokenizer) {
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	level := tracing.Select("gorgo.lr").GetTraceLevel()
+	tracing.Select("gorgo.lr").SetTraceLevel(tracing.LevelInfo)
 	reader := strings.NewReader(input)
 	scanner := scanner.GoTokenizer(fmt.Sprintf("test '%s'", test), reader)
 	ga := makeGrammar(t)
+	tracing.Select("gorgo.lr").SetTraceLevel(level)
 	return NewParser(ga), scanner
 }
 
@@ -65,11 +67,11 @@ var inputStrings = []string{
 // --- the Tests -------------------------------------------------------------
 
 func TestParser1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	for n, input := range inputStrings {
-		T().Infof("=== '%s' ========================", input)
+		tracer().Infof("=== '%s' ========================", input)
 		parser, scanner := makeParser(t, "Parser1", input)
 		gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 		accept, err := parser.Parse(scanner, nil)
@@ -83,9 +85,9 @@ func TestParser1(t *testing.T) {
 }
 
 func TestTree1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	input := "1+2*3"
 	parser, scanner := makeParser(t, "Tree1", input)
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
@@ -105,9 +107,9 @@ func TestTree1(t *testing.T) {
 }
 
 func TestSPPF1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	input := "1+2*3"
 	parser, scanner := makeParser(t, "SPPF1", input)
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
@@ -132,9 +134,9 @@ func TestSPPF1(t *testing.T) {
 }
 
 func TestAmbiguity1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	b := lr.NewGrammarBuilder("Test-G")
 	b.LHS("X").T("+", '+').N("X").End()
 	b.LHS("X").N("X").T("*", '*').N("X").End()

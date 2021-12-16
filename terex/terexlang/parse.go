@@ -91,11 +91,11 @@ var startOnce sync.Once // monitors one-time creation of grammar and lexer
 func createParser() *earley.Parser {
 	startOnce.Do(func() {
 		var err error
-		T().Infof("Creating lexer")
+		tracer().Infof("Creating lexer")
 		if lexer, err = Lexer(); err != nil { // MUST be called before grammar builing !
 			panic("Cannot create lexer")
 		}
-		T().Infof("Creating grammar")
+		tracer().Infof("Creating grammar")
 		if grammar, err = makeTeRExGrammar(); err != nil {
 			panic("Cannot create global grammar")
 		}
@@ -116,11 +116,11 @@ func newASTBuilder() *termr.ASTBuilder {
 		// rewrite: (:atom x)  => x
 		e := terex.Elem(l.Cdar())
 		// in (atom x), check if x is terminal
-		T().Infof("atomOp.rewrite: l.Cdr = %v", e)
+		tracer().Infof("atomOp.rewrite: l.Cdr = %v", e)
 		if l.Cdr.IsLeaf() {
 			e = convertTerminalToken(e, ab.Env)
 		}
-		T().Infof("atomOp.rewrite => %s", e.String())
+		tracer().Infof("atomOp.rewrite => %s", e.String())
 		return e
 	}
 	ab.AddTermR(atomOp)
@@ -162,11 +162,11 @@ func AST(parsetree *sppf.Forest, tokRetr termr.TokenRetriever) (*terex.GCons,
 	ab := newASTBuilder()
 	env := ab.AST(parsetree, tokRetr)
 	if env == nil {
-		T().Errorf("Cannot create AST from parsetree")
+		tracer().Errorf("Cannot create AST from parsetree")
 		return nil, nil, fmt.Errorf("Error while creating AST")
 	}
 	ast := env.AST
-	T().Infof("AST: %s", env.AST.ListString())
+	tracer().Infof("AST: %s", env.AST.ListString())
 	return ast, env, nil
 }
 
@@ -204,7 +204,7 @@ func QuoteAST(ast terex.Element, env *terex.Environment) (terex.Element, error) 
 	//quEnv.Defn("quote", quoteOp.call)
 	quEnv.Resolver = symbolPreservingResolver{}
 	q := terex.Eval(ast, quEnv)
-	T().Debugf("QuotAST returns Q = %v", q)
+	tracer().Debugf("QuotAST returns Q = %v", q)
 	q.Dump(tracing.LevelDebug)
 	return q, quEnv.LastError()
 }
@@ -275,7 +275,7 @@ func (trew *sExprTermR) Operator() terex.Operator {
 }
 
 func (trew *sExprTermR) Rewrite(l *terex.GCons, env *terex.Environment) terex.Element {
-	T().Debugf("%s:trew.Rewrite[%s] called", trew.String(), l.ListString())
+	tracer().Debugf("%s:trew.Rewrite[%s] called", trew.String(), l.ListString())
 	e := trew.rewrite(l, env)
 	// T().Debugf("%s:Op.Rewrite[%s] called, %d rules", op.Name(), l.ListString(), len(op.rules))
 	// for _, rule := range op.rules {
@@ -302,12 +302,12 @@ func (trew *sExprTermR) Descend(sppf.RuleCtxt) bool {
 func (trew *sExprTermR) Call(e terex.Element, env *terex.Environment) terex.Element {
 	opsym := env.FindSymbol(trew.opname, true)
 	if opsym == nil {
-		T().Errorf("Cannot find parsing operation %s", trew.opname)
+		tracer().Errorf("Cannot find parsing operation %s", trew.opname)
 		return e
 	}
 	operator, ok := opsym.Value.AsAtom().Data.(terex.Operator)
 	if !ok {
-		T().Errorf("Cannot call parsing operation %s", trew.opname)
+		tracer().Errorf("Cannot call parsing operation %s", trew.opname)
 		return e
 	}
 	return operator.Call(e, env)
@@ -387,13 +387,13 @@ func initRewriters() {
 		// }
 		content := l.Cddr()                            // strip '('
 		content = content.FirstN(content.Length() - 1) // strip ')'
-		T().Debugf("List content = %v", content)
+		tracer().Debugf("List content = %v", content)
 		return terex.Elem(terex.Cons(l.Car, content)) // (List:Op ...)
 	}
 	listOp.call = func(e terex.Element, env *terex.Environment) terex.Element {
 		// (:list a b c) =>  (a b c)
 		list := e.AsList()
-		T().Debugf("========= Un-LIST of %v  =  %s", e, list.ListString())
+		tracer().Debugf("========= Un-LIST of %v  =  %s", e, list.ListString())
 		if list.Length() == 0 { //  () => nil  [empty list is nil]
 			return terex.Elem(nil)
 		}
@@ -412,7 +412,7 @@ func initRewriters() {
 		// }
 		// T().Errorf("========= type is list")
 		//ee := terex.Cons(terex.Atomize(e.AsList()), nil)
-		T().Debugf("========= => %v", terex.Elem(listElements))
+		tracer().Debugf("========= => %v", terex.Elem(listElements))
 		return terex.Elem(listElements)
 	}
 }
@@ -469,14 +469,14 @@ func convertTerminalToken(el terex.Element, env *terex.Environment) terex.Elemen
 	}
 	t := atom.Data.(*terex.Token)
 	token := t.Token.(*lexmachine.Token)
-	T().Infof("Convert terminal token: '%v'", string(token.Lexeme))
+	tracer().Infof("Convert terminal token: '%v'", string(token.Lexeme))
 	switch token.Type {
 	case tokenIds["NUM"]:
 		if f, err := strconv.ParseFloat(string(token.Lexeme), 64); err == nil {
-			T().Debugf("   t.Value=%g", f)
+			tracer().Debugf("   t.Value=%g", f)
 			t.Value = f
 		} else {
-			T().Errorf("   %s", err.Error())
+			tracer().Errorf("   %s", err.Error())
 			return terex.Elem(terex.Atomize(err))
 		}
 	case tokenIds["STRING"]:
@@ -508,7 +508,7 @@ func (r symbolPreservingResolver) Resolve(atom terex.Atom, env *terex.Environmen
 	if atom.Type() == terex.TokenType {
 		t := atom.Data.(*terex.Token)
 		token := t.Token.(*lexmachine.Token)
-		T().Debugf("Resolve terminal token: '%v'", string(token.Lexeme))
+		tracer().Debugf("Resolve terminal token: '%v'", string(token.Lexeme))
 		switch token.Type {
 		case tokenIds["NUM"]:
 			return terex.Elem(t.Value.(float64)), nil

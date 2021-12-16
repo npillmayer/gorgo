@@ -32,38 +32,16 @@ The API is still very much in flux! Currently it is something like:
 	p := glr.NewParser(grammar, gotoTable, actionTable)
 	p.Parse(startState, scanner)
 
-BSD License
+___________________________________________________________________________
 
-Copyright (c) 2017–2020, Norbert Pillmayer
+License
 
-All rights reserved.
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software or the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+*/
 package glr
 
 import (
@@ -74,13 +52,12 @@ import (
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/dss"
 	"github.com/npillmayer/gorgo/lr/sparse"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 )
 
-// T traces to the SyntaxTracer
-func T() tracing.Trace {
-	return gtrace.SyntaxTracer
+// tracer traces with key 'gorgo.lr'.
+func tracer() tracing.Trace {
+	return tracing.Select("gorgo.lr")
 }
 
 // A Parser type for GLR parsing.
@@ -137,7 +114,7 @@ func NewParser(g *lr.Grammar, gotoTable *sparse.IntMatrix, actionTable *sparse.I
 // otherwise.
 func (p *Parser) Parse(S *lr.CFSMState, scan Scanner) (bool, error) {
 	if p.G == nil || p.gotoT == nil {
-		T().Errorf("GLR parser not initialized")
+		tracer().Errorf("GLR parser not initialized")
 		return false, fmt.Errorf("GLR parser not initialized")
 	}
 	p.dss = dss.NewRoot("G", -1)  // drops existing stacks for new run
@@ -150,13 +127,13 @@ func (p *Parser) Parse(S *lr.CFSMState, scan Scanner) (bool, error) {
 		if token == nil {
 			tokval = scanner.EOF
 		}
-		T().Debugf("got token %v from scanner", token)
+		tracer().Debugf("got token %v from scanner", token)
 		activeStacks := p.dss.ActiveStacks()
-		T().P("glr", "parse").Debugf("currently %d active stack(s)", len(activeStacks))
+		tracer().P("glr", "parse").Debugf("currently %d active stack(s)", len(activeStacks))
 		for _, stack := range activeStacks {
 			accepting = accepting || p.reducesAndShiftsForToken(stack, tokval)
 		}
-		T().Debugf("~~~~~ processed token %v ~~~~~~~~~~~~~~~~~~~~", token)
+		tracer().Debugf("~~~~~ processed token %v ~~~~~~~~~~~~~~~~~~~~", token)
 		if tokval == scanner.EOF {
 			done = true
 		} else {
@@ -187,21 +164,21 @@ func (p *Parser) reducesAndShiftsForToken(stack *dss.Stack, tokval int) bool {
 	for !R.empty() {
 		heads[0] = R.get()
 		stateID, sym := heads[0].Peek()
-		T().P("dss", "TOS").Debugf("state = %d, symbol = %v", stateID, sym)
+		tracer().P("dss", "TOS").Debugf("state = %d, symbol = %v", stateID, sym)
 		actions[0], actions[1] = p.actionT.Values(stateID, tokval)
 		if actions[0] == lr.AcceptAction {
 			accepting = true
 		}
 		if actions[0] == p.actionT.NullValue() {
-			T().Infof("no entry in ACTION table found, parser dies")
+			tracer().Infof("no entry in ACTION table found, parser dies")
 			heads[0].Die()
 		} else {
 			headcnt := 1
-			T().Debugf("action 1 = %s, action 2 = %s",
+			tracer().Debugf("action 1 = %s, action 2 = %s",
 				valstring(actions[0], p.actionT), valstring(actions[1], p.actionT))
 			conflict := actions[1] != p.actionT.NullValue()
 			if conflict { // shift/reduce or reduce/reduce conflict
-				T().Infof("conflict, forking stack")
+				tracer().Infof("conflict, forking stack")
 				heads[1] = stack.Fork() // must happen before action 1 !
 				headcnt = 2
 			}
@@ -214,7 +191,7 @@ func (p *Parser) reducesAndShiftsForToken(stack *dss.Stack, tokval int) bool {
 				}
 			}
 		}
-		T().Infof("%d shift operations in S", len(S))
+		tracer().Infof("%d shift operations in S", len(S))
 		for !S.empty() {
 			heads[0] = S.get()
 			p.shift(stateID, tokval, heads[0])
@@ -225,25 +202,25 @@ func (p *Parser) reducesAndShiftsForToken(stack *dss.Stack, tokval int) bool {
 
 func (p *Parser) shift(stateID int, tokval int, stack *dss.Stack) []*dss.Stack {
 	nextstate := p.gotoT.Value(stateID, tokval)
-	T().Infof("shifting %v to %d", tokenString(tokval), nextstate)
+	tracer().Infof("shifting %v to %d", tokenString(tokval), nextstate)
 	terminal := p.G.Terminal(tokval)
 	head := stack.Push(int(nextstate), terminal)
 	return []*dss.Stack{head}
 }
 
 func (p *Parser) reduce(stateID int, rule *lr.Rule, stack *dss.Stack) []*dss.Stack {
-	T().Infof("reduce %v", rule)
+	tracer().Infof("reduce %v", rule)
 	handle := rule.RHS()
 	heads := stack.Reduce(handle)
 	if heads != nil {
-		T().Debugf("reduce resulted in %d stacks", len(heads))
+		tracer().Debugf("reduce resulted in %d stacks", len(heads))
 		lhs := rule.LHS
 		for i, head := range heads {
 			state, _ := head.Peek()
-			T().Debugf("state on stack#%d is %d", i, state)
+			tracer().Debugf("state on stack#%d is %d", i, state)
 			nextstate := p.gotoT.Value(state, lhs.Value)
 			newhead := head.Push(int(nextstate), lhs)
-			T().Debugf("new head = %v", newhead)
+			tracer().Debugf("new head = %v", newhead)
 		}
 	}
 	return heads
@@ -335,7 +312,7 @@ func NewStdScanner(r io.Reader) *StdScanner {
 // MoveTo is not functional for default scanners.
 // Default scanners allow sequential processing only.
 func (s *StdScanner) MoveTo(position uint64) {
-	T().Errorf("MoveTo() not yet supported by parser.StdScanner")
+	tracer().Errorf("MoveTo() not yet supported by parser.StdScanner")
 }
 
 // NextToken gets the next token scanned from the input source. Returns the token
@@ -347,7 +324,7 @@ func (s *StdScanner) MoveTo(position uint64) {
 func (s *StdScanner) NextToken(expected []int) (int, interface{}) {
 	tokval := int(s.scan.Scan())
 	token := &Token{Value: tokval, Lexeme: []byte(s.scan.TokenText())}
-	T().P("token", tokenString(tokval)).Debugf("scanned token at %s = \"%s\"",
+	tracer().P("token", tokenString(tokval)).Debugf("scanned token at %s = \"%s\"",
 		s.scan.Position, s.scan.TokenText())
 	return tokval, token
 }

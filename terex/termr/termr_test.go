@@ -39,10 +39,9 @@ import (
 } */
 
 func TestAST1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
+	//
 	b := lr.NewGrammarBuilder("TermR")
 	b.LHS("E").N("E").T("+", '+').T("a", scanner.Ident).End()
 	b.LHS("E").T("a", scanner.Ident).End()
@@ -71,10 +70,9 @@ func TestAST1(t *testing.T) {
 }
 
 func TestAST2(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
+	//
 	b := lr.NewGrammarBuilder("TermR")
 	b.LHS("E").N("E").T("+", '+').T("a", scanner.Ident).End()
 	b.LHS("E").T("a", scanner.Ident).End()

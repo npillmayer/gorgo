@@ -8,13 +8,13 @@ import (
 )
 
 func dumpState(states []*iteratable.Set, stateno uint64) {
-	T().Debugf("--- State %04d ------------------------------------", stateno)
+	tracer().Debugf("--- State %04d ------------------------------------", stateno)
 	S := states[stateno]
 	n := 1
 	S.IterateOnce()
 	for S.Next() {
 		item := S.Item().(lr.Item)
-		T().Debugf("[%2d] %s", n, item)
+		tracer().Debugf("[%2d] %s", n, item)
 		n++
 	}
 }

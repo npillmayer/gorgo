@@ -6,9 +6,6 @@ import (
 	"testing"
 	"text/scanner"
 
-	"github.com/npillmayer/schuko/tracing"
-
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 	"github.com/timtadh/lexmachine"
 	lex "github.com/timtadh/lexmachine"
@@ -25,9 +22,9 @@ var inputStrings = []string{
 var tokenCounts = []int{1, 3, 3, 3, 5}
 
 func TestScan1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
+	//
 	for i, input := range inputStrings {
 		t.Logf("------+-----------------+--------")
 		reader := strings.NewReader(input)
@@ -50,10 +47,9 @@ func TestScan1(t *testing.T) {
 var lispTokenCounts = []int{1, 3, 2, 3, 3}
 
 func TestLM(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	initTokens()
 	init := func(lexer *lexmachine.Lexer) {
 		lexer.Add([]byte(`//[^\n]*\n?`), Skip)

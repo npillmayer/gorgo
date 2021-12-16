@@ -31,38 +31,14 @@ seems never to materialize. However, after gaining more insights in the future w
 using the SPPF for more complex real word scenarios I will be prepared to reconsider.
 
 
-BSD License
+License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+*/
 
 import (
 	"fmt"
@@ -138,7 +114,7 @@ func (f *Forest) AddReduction(sym *lr.Symbol, rule int, rhs []*SymbolNode) *Symb
 	if len(rhs) == 0 {
 		return nil
 	}
-	T().Debugf("Reduction: %s → RHS = %v", sym.Name, rhs)
+	tracer().Debugf("Reduction: %s → RHS = %v", sym.Name, rhs)
 	start := rhs[0].Extent.From()
 	end := rhs[len(rhs)-1].Extent.To()
 	rhsnode := f.addRHSNode(rule, rhs, rhs[0].Extent.From())
@@ -288,7 +264,7 @@ func rhsSignature(rhs []*SymbolNode, start uint64) int32 {
 		return int32(o[start%uint64(len(o))])
 	}
 	h := int64(817)
-	T().Debugf("calc signature of RHS=%v ----------------------", rhs)
+	tracer().Debugf("calc signature of RHS=%v ----------------------", rhs)
 	for _, symnode := range rhs {
 		if v := abs(symnode.Symbol.Value); v != 0 {
 			h *= v
@@ -332,7 +308,7 @@ type orEdge struct {
 //
 // If the edge already exists, nothing is done.
 func (f *Forest) addOrEdge(sym *lr.Symbol, rhs *rhsNode, start, end uint64) {
-	T().Debugf("Add OR-edge %v ----> %v", sym, rhs.rule)
+	tracer().Debugf("Add OR-edge %v ----> %v", sym, rhs.rule)
 	sn := f.addSymNode(sym, start, end)
 	if e := f.findOrEdge(sn, rhs); e.isNull() {
 		e = orEdge{sn, rhs}
@@ -379,7 +355,7 @@ type andEdge struct {
 //
 // If the edge already exists, nothing is done.
 func (f *Forest) addAndEdge(rhs *rhsNode, seq uint, sym *lr.Symbol, start, end uint64) andEdge {
-	T().Debugf("Add AND-edge %v --(%d)--> %v", rhs.rule, seq, sym)
+	tracer().Debugf("Add AND-edge %v --(%d)--> %v", rhs.rule, seq, sym)
 	sn := f.addSymNode(sym, start, end)
 	var e andEdge
 	if e = f.findAndEdge(rhs, sn); e.isNull() {

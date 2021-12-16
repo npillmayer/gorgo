@@ -253,7 +253,7 @@ func (scst *ScopeTree) PushNewScope(nm string) *Scope {
 		scst.ScopeBase = newsc // make new scope anchor
 	}
 	scst.ScopeTOS = newsc // new scope now TOS
-	T().P("scope", newsc.Name).Debugf("pushing new scope")
+	tracer().P("scope", newsc.Name).Debugf("pushing new scope")
 	return newsc
 }
 
@@ -263,7 +263,7 @@ func (scst *ScopeTree) PopScope() *Scope {
 		panic("attempt to pop scope from empty stack")
 	}
 	sc := scst.ScopeTOS
-	T().Debugf("popping scope [%s]", sc.Name)
+	tracer().Debugf("popping scope [%s]", sc.Name)
 	scst.ScopeTOS = scst.ScopeTOS.Parent
 	return sc
 }

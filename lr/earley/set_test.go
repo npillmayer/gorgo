@@ -4,15 +4,11 @@ import (
 	"testing"
 
 	"github.com/npillmayer/gorgo/lr"
-	"github.com/npillmayer/schuko/gtrace"
-	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 )
 
 func TestSet1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
 	//
 	set := ruleset{}
@@ -22,9 +18,7 @@ func TestSet1(t *testing.T) {
 }
 
 func TestSet2(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G") // build a grammar of 3 rules

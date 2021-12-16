@@ -6,7 +6,13 @@ import (
 	"text/scanner"
 
 	"github.com/npillmayer/schuko/gtrace"
+	"github.com/npillmayer/schuko/tracing"
 )
+
+// tracer traces with key 'gorgo.lr'.
+func tracer() tracing.Trace {
+	return tracing.Select("gorgo.lr")
+}
 
 // AnyToken is a helper flag: expect any token from the scanner.
 var AnyToken []int = nil
@@ -39,9 +45,9 @@ type DefaultTokenizer struct {
 	unifyStrings bool        // convert single chars to strings
 }
 
-// Defailt error reporting function for scanners
+// Default error reporting function for scanners
 func logError(e error) {
-	gtrace.SyntaxTracer.Errorf(e.Error())
+	tracer().Errorf("scanner error: " + e.Error())
 }
 
 // GoTokenizer creates a scanner/tokenizer accepting tokens similar to the Go language.

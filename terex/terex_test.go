@@ -3,9 +3,6 @@ package terex
 import (
 	"testing"
 
-	"github.com/npillmayer/schuko/tracing"
-
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 )
 
@@ -50,10 +47,9 @@ func TestList2(t *testing.T) {
 }
 
 func TestFirst(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	l := List(1, 2, 3, 4, 5)
 	f := l.FirstN(3)
 	if f.Length() != 3 || f.Car.Data != 1.0 {
@@ -72,10 +68,9 @@ func TestFirst(t *testing.T) {
 }
 
 func TestNth(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	l := List(1, 2, 3, 4, 5)
 	f := l.Nth(3)
 	if f.Data != 3.0 {
@@ -84,10 +79,9 @@ func TestNth(t *testing.T) {
 }
 
 func TestDrop(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	l := List(1, 2, 3, 4, 5)
 	f := l.Drop(func(a Atom) bool {
 		return a.Data == 3.0
@@ -99,10 +93,9 @@ func TestDrop(t *testing.T) {
 }
 
 func TestMatch1(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	l1 := List("a", 1, 2)
 	l2 := List("a", 1, 2)
 	if !l1.Match(l2, GlobalEnvironment) {
@@ -125,10 +118,9 @@ func TestMatch1(t *testing.T) {
 }
 
 func TestMatch2(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	//
 	S := GlobalEnvironment.Intern("S", false)
 	l1 := QuotedList("a", S, 2)
 	l2 := List("a", 7, 2)
@@ -143,10 +135,9 @@ func TestMatch2(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	l2 := List("+", 5, 7, 12)
 	l := Cons(Atomize(1), nil)
 	l.Cdr = Cons(Atomize(2), nil)
@@ -162,22 +153,19 @@ func TestString(t *testing.T) {
 }
 
 func TestListAPI(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	l := List(1, 2, 3)
 	t.Logf("last = %s", l.Last())
 	l.Append(List(5))
 	t.Logf("l = %s", l.ListString())
-	//t.Fail()
 }
 
 func TestNilElement(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	n := Elem(nil)
 	if !n.IsNil() {
 		t.Errorf("nil-element expected to be recognized with isNil()")

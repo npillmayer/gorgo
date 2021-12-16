@@ -11,10 +11,9 @@ import (
 )
 
 func TestScanner(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	lex, _ := Lexer()
 	input := "a + '(1.2 world !) #var nil ;"
 	scan, err := lex.Scanner(input)
@@ -66,10 +65,9 @@ func TestAssignability(t *testing.T) {
 // }
 
 func TestMatchAnything(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	//
 	initRewriters()
 	l := terex.List(1, 2, 3)
 	if !termr.Anything().Match(l, terex.GlobalEnvironment) {
@@ -78,10 +76,9 @@ func TestMatchAnything(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
+	//
 	terex.InitGlobalEnvironment()
 	input := `((1 2))`
 	//input := "(Hello 'World 1)"
@@ -106,10 +103,9 @@ func TestParse(t *testing.T) {
 }
 
 func TestAST(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
+	//
 	terex.InitGlobalEnvironment()
 	input := `a`
 	//input := `(+ '(1 "Hi" 3) 4)`
@@ -121,7 +117,7 @@ func TestAST(t *testing.T) {
 		t.Errorf("parse tree or  token retriever is nil")
 	}
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	T().Infof("####################################################")
+	tracer().Infof("####################################################")
 	ab := newASTBuilder()
 	env := ab.AST(parsetree, retr)
 	if env == nil {
@@ -129,17 +125,16 @@ func TestAST(t *testing.T) {
 	}
 	ast := env.AST
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
-	T().Infof("AST: %s", ast.ListString())
-	T().Infof("####################################################")
+	tracer().Infof("AST: %s", ast.ListString())
+	tracer().Infof("####################################################")
 	// terseAst := terex.GlobalEnvironment.Quote(ast)
 	// T().Infof("reduced AST: %s", terseAst.ListString())
 }
 
 func TestQuoteAST(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
+	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
 	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
+	//
 	terex.InitGlobalEnvironment()
 	//input := `(Hello 'World (+ 1 2) "string")`
 	input := `'((1))`

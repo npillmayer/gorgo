@@ -69,7 +69,7 @@ func (gb *GrammarBuilder) LHS(s string) *RuleBuilder {
 // Grammar returns the (completed) grammar.
 func (gb *GrammarBuilder) Grammar() (*Grammar, error) {
 	if len(gb.g.rules) <= 1 {
-		T().Errorf("Grammar does not contain any rules")
+		tracer().Errorf("Grammar does not contain any rules")
 		return nil, fmt.Errorf("Grammar does not contain any rules")
 	}
 	gb.initial.rhs = append(gb.initial.rhs, gb.g.rules[1].LHS)
@@ -116,7 +116,7 @@ func (rb *RuleBuilder) N(s string) *RuleBuilder {
 // violated.
 func (rb *RuleBuilder) T(s string, tokval int) *RuleBuilder {
 	if tokval <= NonTermType {
-		T().Errorf("illegal token value parameter (%d), must be > %d", tokval, NonTermType)
+		tracer().Errorf("illegal token value parameter (%d), must be > %d", tokval, NonTermType)
 		panic(fmt.Sprintf("illegal token value parameter (%d)", tokval))
 	}
 	sym := rb.gb.g.resolveOrDefineTerminal(s, tokval)
@@ -164,7 +164,7 @@ func (rb *RuleBuilder) AppendSymbol(sym *Symbol) *RuleBuilder {
 // It closes the rule, thus no call to End() or EOF() must follow.
 func (rb *RuleBuilder) Epsilon() *Rule {
 	rb.gb.appendRule(rb.rule)
-	T().Debugf("appending epsilon-rule:  %v", rb.rule)
+	tracer().Debugf("appending epsilon-rule:  %v", rb.rule)
 	r := rb.rule
 	rb.rule = nil
 	return r
@@ -186,7 +186,7 @@ func (rb *RuleBuilder) EOF() *Rule {
 // for this rule).
 func (rb *RuleBuilder) End() *Rule {
 	rb.gb.appendRule(rb.rule)
-	T().Debugf("appending rule:  %v", rb.rule)
+	tracer().Debugf("appending rule:  %v", rb.rule)
 	r := rb.rule
 	rb.rule = nil
 	return r

@@ -1,38 +1,13 @@
 package sppf
 
 /*
-BSD License
+License
 
-Copyright (c) 2019–20, Norbert Pillmayer
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
 
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.
-
-3. Neither the name of this software nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  */
+Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
+*/
 
 import "github.com/npillmayer/gorgo/lr"
 
@@ -86,13 +61,13 @@ func (c *Cursor) RHS(sym *SymbolNode) (int, []*RuleNode) {
 	}
 	if iter, ok := c.forest.children(rhs); ok {
 		edges := c.forest.andEdges[rhs]
-		T().Debugf("RHS(%s) has length %d", sym, edges.Size())
+		tracer().Debugf("RHS(%s) has length %d", sym, edges.Size())
 		rhsnodes := make([]*RuleNode, edges.Size())
 		var rhschild *SymbolNode
 		rhschild, iter = iter()
 		i := 0
 		for ; rhschild != nil; rhschild, iter = iter() {
-			T().Debugf("   RHS #%d = %s", i, rhschild)
+			tracer().Debugf("   RHS #%d = %s", i, rhschild)
 			rhsnodes[i] = &RuleNode{symbol: rhschild}
 			i++
 		}
@@ -188,7 +163,7 @@ type Pruner interface {
 type dcp struct{}
 
 func (p dcp) prune(sym *SymbolNode, rhs *rhsNode) bool {
-	T().Infof("Ambiguous symbol node %v detected", sym)
+	tracer().Infof("Ambiguous symbol node %v detected", sym)
 	return false // do not prune anything
 }
 
@@ -217,7 +192,7 @@ func (f *Forest) disambiguate(sym *SymbolNode, pruner Pruner) *rhsNode {
 func (c *Cursor) Up() (*RuleNode, bool) {
 	if parent, ok := c.forest.parent[c.current.symbol]; ok {
 		c.current.symbol = parent
-		T().Debugf("UP Cursor @ %v", c.current.Symbol())
+		tracer().Debugf("UP Cursor @ %v", c.current.Symbol())
 		c.stack = c.stack[:len(c.stack)-1]
 		return c.current, true
 	}
@@ -237,7 +212,7 @@ func (c *Cursor) Down(dir Direction) (*RuleNode, bool) {
 		var child *SymbolNode
 		if child, iter = iter(); child != nil {
 			c.current.symbol = child
-			T().Debugf("DOWN Cursor @ %v", c.current.Symbol())
+			tracer().Debugf("DOWN Cursor @ %v", c.current.Symbol())
 			return c.current, true
 		}
 	}
@@ -250,7 +225,7 @@ func (c *Cursor) Sibling() (*RuleNode, bool) {
 	var sym *SymbolNode
 	if sym, iter = iter(); sym != nil {
 		c.current.symbol = sym
-		T().Debugf("SIBLING Cursor @ %v", c.current.Symbol())
+		tracer().Debugf("SIBLING Cursor @ %v", c.current.Symbol())
 		return c.current, true
 	}
 	return c.current, false
@@ -260,7 +235,7 @@ func (c *Cursor) Sibling() (*RuleNode, bool) {
 // encountered. It returns a user-defined value, calculated by the listener.
 func (c *Cursor) TopDown(listener Listener, dir Direction, breakmode Breakmode) interface{} {
 	c.startNode = c.current
-	T().Debugf("TopDown starting at node %v", c.current.Symbol())
+	tracer().Debugf("TopDown starting at node %v", c.current.Symbol())
 	value := c.traverseTopDown(listener, dir, breakmode, 0)
 	return value
 }
@@ -272,9 +247,9 @@ func (c *Cursor) traverseTopDown(listener Listener, dir Direction, breakmode Bre
 		ctxt := makeCtxt(c.current.symbol.Extent, level+1, -1, nil)
 		return listener.Terminal(sym.Value, sym.Token(), ctxt)
 	}
-	T().Debugf(">>> %s", c.current.symbol)
+	tracer().Debugf(">>> %s", c.current.symbol)
 	ruleno, rhsNodes := c.RHS(c.current.symbol)
-	T().Debugf("%s.rhsNodes=%v", c.current.Symbol(), rhsNodes)
+	tracer().Debugf("%s.rhsNodes=%v", c.current.Symbol(), rhsNodes)
 	localAttributes := listener.MakeAttrs(c.current.Symbol())
 	ctxt := makeCtxt(c.current.Span(), level, ruleno, localAttributes)
 	doContinue := listener.EnterRule(c.current.Symbol(), rhsNodes, ctxt)
@@ -286,7 +261,7 @@ func (c *Cursor) traverseTopDown(listener Listener, dir Direction, breakmode Bre
 		if _, ok := c.Down(dir); ok {
 			for ; ok; _, ok = c.Sibling() {
 				chvalue := c.traverseTopDown(listener, dir, breakmode, level+1)
-				T().Debugf("child value[%d] = %v", i, chvalue)
+				tracer().Debugf("child value[%d] = %v", i, chvalue)
 				rhsNodes[i].Value = chvalue
 				i += int(dir)
 			}
@@ -294,7 +269,7 @@ func (c *Cursor) traverseTopDown(listener Listener, dir Direction, breakmode Bre
 		}
 	}
 	value = listener.ExitRule(c.current.Symbol(), rhsNodes, ctxt)
-	T().Debugf("<<< %s", c.current.symbol)
+	tracer().Debugf("<<< %s", c.current.symbol)
 	return value
 }
 
