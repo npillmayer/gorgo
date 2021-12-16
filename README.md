@@ -9,3 +9,5 @@ All these tools have their value and I appreciate the availability of compiler-c
 
 ## Status
 This is very much work in progress. Not yet intended for production use. Please be patient.
+If you're interested in such an exotic topic, I invite you to follow along on
+[my blog](https://npillmayer.github.io/GoRGO/).
