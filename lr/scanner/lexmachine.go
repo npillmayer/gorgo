@@ -27,7 +27,6 @@ func NewLMAdapter(init func(*lex.Lexer), literals []string, keywords []string, t
 	init(adapter.Lexer)
 	for _, lit := range literals {
 		r := "\\" + strings.Join(strings.Split(lit, ""), "\\")
-		//gtrace.SyntaxTracer.Debugf("adding literal %s", r)
 		adapter.Lexer.Add([]byte(r), MakeToken(lit, tokenIds[lit]))
 	}
 	for _, name := range keywords {

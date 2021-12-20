@@ -82,11 +82,22 @@ func (sym Symbol) IsOperatorType() bool {
 
 // Get returns a property value for a given key.
 func (sym *Symbol) Get(key string) Atom {
+	if sym.props == nil {
+		return NilAtom
+	}
 	value := sym.props.Get(key, sym)
 	if value == nil {
 		return NilAtom
 	}
 	return Atomize(value)
+}
+
+// Set returns a property value for a given key.
+func (sym *Symbol) Set(key string, val interface{}) {
+	if sym.props == nil {
+		sym.props = makeProps()
+	}
+	sym.props.Set(key, val)
 }
 
 type properties []keyvalue

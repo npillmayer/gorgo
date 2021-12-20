@@ -24,17 +24,17 @@ func (env *Environment) Eval(list *GCons) *GCons {
 func Eval(el Element, env *Environment) Element {
 	//T().Errorf("############# Eval => %s", el.String())
 	if el.IsAtom() {
-		/* 		if el.AsAtom().Type() == ConsType {
-			T().Errorf("eval of sublist %v", el.AsList().ListString())
-			sublist := el.AsAtom().Data.(*GCons)
-			T().Errorf("eval of sublist %v", sublist.ListString())
-			mapped := evalList(sublist, env)
-			T().Errorf("        sublist %v", mapped.String())
-			//return mapped
-			tee := Cons(Atomize(mapped.AsList()), nil)
-			T().Errorf("   reconstucted %v", tee.String())
-			return Elem(tee)
-		} */
+		// if el.AsAtom().Type() == ConsType {
+		// 	T().Errorf("eval of sublist %v", el.AsList().ListString())
+		// 	sublist := el.AsAtom().Data.(*GCons)
+		// 	T().Errorf("eval of sublist %v", sublist.ListString())
+		// 	mapped := evalList(sublist, env)
+		// 	T().Errorf("        sublist %v", mapped.String())
+		// 	//return mapped
+		// 	tee := Cons(Atomize(mapped.AsList()), nil)
+		// 	T().Errorf("   reconstucted %v", tee.String())
+		// 	return Elem(tee)
+		// }
 		tracer().Debugf("eval of atom %v", el.AsAtom())
 		return evalAtom(el.AsAtom(), env)
 	}
