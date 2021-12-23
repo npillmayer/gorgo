@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/earley"
 	"github.com/npillmayer/gorgo/lr/scanner"
@@ -292,7 +293,7 @@ func makeParserOps(env *terex.Environment) {
 type parsetree struct {
 	G    *lr.LRAnalysis
 	tree *sppf.Forest
-	retr termr.TokenRetriever
+	retr gorgo.TokenRetriever
 }
 
 // --- Helpers ---------------------------------------------------------------
@@ -347,7 +348,7 @@ func makeOp(t terex.AtomType, a int, op func(*terex.GCons, *terex.Environment) t
 	return call
 }
 
-func parseAny(ga *lr.LRAnalysis, input string) (*sppf.Forest, termr.TokenRetriever, error) {
+func parseAny(ga *lr.LRAnalysis, input string) (*sppf.Forest, gorgo.TokenRetriever, error) {
 	level := tracer().GetTraceLevel()
 	tracer().SetTraceLevel(tracing.LevelError)
 	parser := earley.NewParser(ga, earley.GenerateTree(true))
@@ -359,7 +360,7 @@ func parseAny(ga *lr.LRAnalysis, input string) (*sppf.Forest, termr.TokenRetriev
 	}
 	tracer().SetTraceLevel(level)
 	tracer().Infof("Successfully parsed input")
-	tokretr := func(pos uint64) interface{} {
+	tokretr := func(pos uint64) gorgo.Token {
 		return parser.TokenAt(pos)
 	}
 	return parser.ParseForest(), tokretr, nil

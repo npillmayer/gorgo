@@ -66,6 +66,7 @@ package slr
 import (
 	"fmt"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/schuko/tracing"
 
 	"github.com/npillmayer/gorgo/lr"
@@ -88,16 +89,18 @@ type Parser struct {
 
 // We store pairs of state-IDs and symbol-IDs on the parse stack.
 type stackitem struct {
-	stateID int  // ID of a CFSM state
-	symID   int  // ID of a grammar symbol (terminal or non-terminal)
-	span    span // input span over which this symbol reaches
+	stateID int        // ID of a CFSM state
+	symID   int        // ID of a grammar symbol (terminal or non-terminal)
+	span    gorgo.Span // input span over which this symbol reaches
+	//span    span // input span over which this symbol reaches
 }
 
 // span is a small type for capturing a length of input token run. For every
 // terminal and non-terminal, a parse tree/forest will track which input positions
 // this symbol covers.
 // Some useful operations on spans are to be found further down in this file.
-type span [2]uint64 // start and end positions in the input string
+//
+//type span [2]uint64 // start and end positions in the input string
 
 // NewParser creates an SLR(1) parser.
 func NewParser(g *lr.Grammar, gotoTable *sparse.IntMatrix, actionTable *sparse.IntMatrix) *Parser {
@@ -127,35 +130,42 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 		return false, fmt.Errorf("SLR(1)-parser not initialized")
 	}
 	var accepting bool
-	p.stack = append(p.stack, stackitem{S.ID, 0, span{0, 0}}) // push S
+	//p.stack = append(p.stack, stackitem{S.ID, 0, span{0, 0}}) // push S
+	p.stack = append(p.stack, stackitem{S.ID, 0, gorgo.Span{0, 0}}) // push S
 	// http://www.cse.unt.edu/~sweany/CSCE3650/HANDOUTS/LRParseAlg.pdf
-	tokval, token, pos, length := scan.NextToken(nil)
+	//tokval, token, pos, length := scan.NextToken(nil)
+	token := scan.NextToken(nil)
+	tokval := token.TokType()
 	done := false
 	for !done {
-		if token == nil {
-			tokval = scanner.EOF
-		}
-		tracer().Debugf("got token %s/%d from scanner", token, tokval)
+		// if token == nil {
+		// 	tokval = scanner.EOF
+		// }
+		tracer().Debugf("got token %q/%d from scanner", token.Lexeme(), tokval)
 		state := p.stack[len(p.stack)-1] // TOS
-		action := p.actionT.Value(state.stateID, tokval)
+		action := p.actionT.Value(state.stateID, int(tokval))
 		tracer().Debugf("action(%d,%d)=%s", state.stateID, tokval, valstring(action, p.actionT))
 		if action == p.actionT.NullValue() {
-			return false, fmt.Errorf("Syntax error at %d/%v", tokval, token)
+			return false, fmt.Errorf("syntax error at %d/%v", tokval, token)
 		}
 		if action == lr.AcceptAction {
 			accepting, done = true, true
 			// TODO patch start symbol to have span(0,pos)
 		} else if action == lr.ShiftAction {
-			nextstate := int(p.gotoT.Value(state.stateID, tokval))
+			nextstate := int(p.gotoT.Value(state.stateID, int(tokval)))
 			tracer().Debugf("shifting, next state = %d", nextstate)
 			p.stack = append(p.stack, // push a terminal state onto stack
-				stackitem{nextstate, tokval, span{pos, pos + length - 1}})
-			tokval, token, pos, length = scan.NextToken(nil)
+				stackitem{nextstate, int(tokval), token.Span()}) //span{pos, pos + length - 1}})
+			//tokval, token, pos, length = scan.NextToken(nil)
+			token = scan.NextToken(nil)
+			tokval = token.TokType()
 		} else if action > 0 { // reduce action
 			rule := p.G.Rule(int(action))
 			nextstate, handlespan := p.reduce(state.stateID, rule)
-			if handlespan.isNull() { // resulted from an epsilon production
-				handlespan = span{pos - 1, pos - 1} // epsilon was just before lookahead
+			if handlespan.IsNull() { // resulted from an epsilon production
+				//handlespan = span{pos - 1, pos - 1} // epsilon was just before lookahead
+				pos := token.Span().From()
+				handlespan = gorgo.Span{pos - 1, pos - 1} // epsilon was just before lookahead
 			}
 			tracer().Debugf("reduced to next state = %d", nextstate)
 			p.stack = append(p.stack, // push a non-terminal state onto stack
@@ -177,17 +187,18 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 //
 // TODO: perform semantic action on reduce, either by calling a user-provided
 // function from the grammar, or by constructing a node in a parse tree/forest.
-func (p *Parser) reduce(stateID int, rule *lr.Rule) (int, span) {
+func (p *Parser) reduce(stateID int, rule *lr.Rule) (int, gorgo.Span) {
 	tracer().Infof("reduce %v", rule)
 	handle := reverse(rule.RHS())
-	var handlespan span
+	//var handlespan span
+	var handlespan gorgo.Span
 	for _, sym := range handle {
 		p.stack = p.stack[:len(p.stack)-1] // pop TOS
 		tos := p.stack[len(p.stack)-1]
 		if tos.symID != sym.Value {
 			tracer().Errorf("Expected %v on top of stack, got %d", sym, tos.symID)
 		}
-		handlespan = handlespan.extendFrom(tos.span)
+		handlespan = handlespan.Extend(tos.span)
 	}
 	lhs := rule.LHS
 	// TODO: now perform sematic action or parse-tree build
@@ -260,7 +271,9 @@ func tokenString(tok int) string {
 */
 
 // --- spans ----------------------------------------
+// substituted by gorgo.Span @ Wed Dec 22 15:27:11 CET 2021
 
+/*
 func (s span) from() uint64 {
 	return s[0]
 }
@@ -282,6 +295,7 @@ func (s span) extendFrom(other span) span {
 	}
 	return s
 }
+*/
 
 // --- Helpers ----------------------------------------------------------
 

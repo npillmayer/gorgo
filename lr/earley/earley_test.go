@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
@@ -67,7 +68,7 @@ var inputStrings = []string{
 // --- the Tests -------------------------------------------------------------
 
 func TestParser1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	for n, input := range inputStrings {
@@ -85,12 +86,12 @@ func TestParser1(t *testing.T) {
 }
 
 func TestTree1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	input := "1+2*3"
 	parser, scanner := makeParser(t, "Tree1", input)
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	tracing.Select("gorgo.lr").SetTraceLevel(tracing.LevelInfo)
 	accept, err := parser.Parse(scanner, nil)
 	if err != nil {
 		t.Error(err)
@@ -107,12 +108,12 @@ func TestTree1(t *testing.T) {
 }
 
 func TestSPPF1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	input := "1+2*3"
 	parser, scanner := makeParser(t, "SPPF1", input)
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	tracing.Select("gorgo.lr").SetTraceLevel(tracing.LevelInfo)
 	accept, err := parser.Parse(scanner, nil)
 	if err != nil {
 		t.Error(err)
@@ -134,7 +135,7 @@ func TestSPPF1(t *testing.T) {
 }
 
 func TestAmbiguity1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("Test-G")
@@ -149,7 +150,7 @@ func TestAmbiguity1(t *testing.T) {
 	if ga == nil {
 		t.Errorf("Could not analyze grammar")
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	tracing.Select("gorgo.lr").SetTraceLevel(tracing.LevelInfo)
 	input := "+x*x"
 	reader := strings.NewReader(input)
 	sc := scanner.GoTokenizer(fmt.Sprintf("test '%s'", input), reader)
@@ -176,7 +177,6 @@ func TestAmbiguity1(t *testing.T) {
 			t.Errorf("Expected root node of forest to be S', is %v", root.Symbol())
 		}
 	}
-	t.Fail()
 }
 
 // --- Expression Listener for testing ---------------------------------------
@@ -198,7 +198,7 @@ func NewExprListener(t *testing.T) *ExprListener {
 	return el
 }
 
-func (el *ExprListener) Reduce(lhs *lr.Symbol, rule int, children []*RuleNode, extent lr.Span,
+func (el *ExprListener) Reduce(lhs *lr.Symbol, rule int, children []*RuleNode, extent gorgo.Span,
 	level int) interface{} {
 	//
 	if r, ok := el.dispatch[lhs.Name]; ok {
@@ -235,13 +235,15 @@ func (el *ExprListener) ReduceFactor(lhs *lr.Symbol, rule int, children []*RuleN
 	return v
 }
 
-func (el *ExprListener) Terminal(tokval int, token interface{}, extent lr.Span, level int) interface{} {
-	el.t.Logf("%sToken %s|%d\n", indent(level), scanner.Lexeme(token), tokval)
-	if tokval == scanner.Int {
-		n, _ := strconv.Atoi(scanner.Lexeme(token))
+func (el *ExprListener) Terminal(token gorgo.Token, level int) interface{} {
+	//func (el *ExprListener) Terminal(tokval int, token interface{}, extent gorgo.Span, level int) interface{} {
+	el.t.Logf("%sToken %q|%d\n", indent(level), token.Lexeme(), token.TokType())
+	if token.TokType() == scanner.Int {
+		n, _ := strconv.Atoi(token.Lexeme())
+		el.t.Logf("%svalue n = %d", indent(level), n)
 		return n
 	}
-	return tokval
+	return token.TokType()
 }
 
 func indent(level int) string {

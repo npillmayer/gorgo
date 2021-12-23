@@ -3,9 +3,10 @@ package scanner
 import (
 	"strings"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/schuko/gtrace"
 
-	lex "github.com/timtadh/lexmachine"
+	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
 )
 
@@ -13,7 +14,7 @@ import (
 
 // LMAdapter is a lexmachine adapter to use lexmachine as a scanner.
 type LMAdapter struct {
-	Lexer *lex.Lexer
+	Lexer *lexmachine.Lexer
 }
 
 // NewLMAdapter creates a new lexmachine adapter. It receives a list of
@@ -21,9 +22,9 @@ type LMAdapter struct {
 // map for translating token strings to their values.
 //
 // NewLMAdapter will return an error if compiling the DFA failed.
-func NewLMAdapter(init func(*lex.Lexer), literals []string, keywords []string, tokenIds map[string]int) (*LMAdapter, error) {
+func NewLMAdapter(init func(*lexmachine.Lexer), literals []string, keywords []string, tokenIds map[string]int) (*LMAdapter, error) {
 	adapter := &LMAdapter{}
-	adapter.Lexer = lex.NewLexer()
+	adapter.Lexer = lexmachine.NewLexer()
 	init(adapter.Lexer)
 	for _, lit := range literals {
 		r := "\\" + strings.Join(strings.Split(lit, ""), "\\")
@@ -52,9 +53,11 @@ func (lm *LMAdapter) Scanner(input string) (*LMScanner, error) {
 // LMScanner is a scanner type for lexmachine scanners, implementing the
 // Tokenizer interface.
 type LMScanner struct {
-	scanner *lex.Scanner
+	scanner *lexmachine.Scanner
 	Error   func(error)
 }
+
+var _ Tokenizer = (*LMScanner)(nil)
 
 // SetErrorHandler sets an error handler for the scanner.
 func (lms *LMScanner) SetErrorHandler(h func(error)) {
@@ -68,7 +71,8 @@ func (lms *LMScanner) SetErrorHandler(h func(error)) {
 // NextToken is part of the Tokenizer interface.
 //
 // Warning: The current implementation will ignore the 'expected'-argument.
-func (lms *LMScanner) NextToken(expected []int) (int, interface{}, uint64, uint64) {
+func (lms *LMScanner) NextToken(expected []int) gorgo.Token {
+	//func (lms *LMScanner) NextToken(expected []int) (int, interface{}, uint64, uint64) {
 	tok, err, eof := lms.scanner.Next()
 	for err != nil {
 		lms.Error(err)
@@ -78,25 +82,31 @@ func (lms *LMScanner) NextToken(expected []int) (int, interface{}, uint64, uint6
 		tok, err, eof = lms.scanner.Next()
 	}
 	if eof {
-		return EOF, nil, 0, 0
+		//return EOF, nil, 0, 0
+		return defaultToken{kind: EOF, lexeme: "", span: gorgo.Span{0, 0}}
 	}
-	token := tok.(*lex.Token)
-	tokval := token.Type
-	start := uint64(token.StartColumn)
-	length := uint64(len(token.Lexeme))
-	return tokval, token, start, length
+	token := tok.(*lexmachine.Token)
+	//tokval := token.Type
+	//start := uint64(token.StartColumn)
+	//length := uint64(len(token.Lexeme))
+	//return tokval, token, start, length
+	return defaultToken{
+		kind:   gorgo.TokType(token.Type),
+		lexeme: string(string(token.Lexeme)),
+		span:   gorgo.Span{uint64(token.StartColumn), uint64(token.EndColumn)},
+	}
 }
 
 // ---------------------------------------------------------------------------
 
 // Skip is a pre-defined action which ignores the scanned match.
-func Skip(*lex.Scanner, *machines.Match) (interface{}, error) {
+func Skip(*lexmachine.Scanner, *machines.Match) (interface{}, error) {
 	return nil, nil
 }
 
 // MakeToken is a pre-defined action which wraps a scanned match into a token.
-func MakeToken(name string, id int) lex.Action {
-	return func(s *lex.Scanner, m *machines.Match) (interface{}, error) {
+func MakeToken(name string, id int) lexmachine.Action {
+	return func(s *lexmachine.Scanner, m *machines.Match) (interface{}, error) {
 		return s.Token(id, string(m.Bytes), m), nil
 	}
 }

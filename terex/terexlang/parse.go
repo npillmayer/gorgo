@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/earley"
 	"github.com/npillmayer/gorgo/lr/scanner"
@@ -109,7 +110,7 @@ func newASTBuilder() *termr.ASTBuilder {
 // Clients may use a terex.ASTBuilder to create an abstract syntax tree
 // from the parse forest.
 //
-func Parse(input string) (*sppf.Forest, termr.TokenRetriever, error) {
+func Parse(input string) (*sppf.Forest, gorgo.TokenRetriever, error) {
 	parser := createParser()
 	scan, err := lexer.Scanner(input)
 	if err != nil {
@@ -124,8 +125,8 @@ func Parse(input string) (*sppf.Forest, termr.TokenRetriever, error) {
 	return parser.ParseForest(), earleyTokenReceiver(parser), nil
 }
 
-func earleyTokenReceiver(parser *earley.Parser) termr.TokenRetriever {
-	return func(pos uint64) interface{} {
+func earleyTokenReceiver(parser *earley.Parser) gorgo.TokenRetriever {
+	return func(pos uint64) gorgo.Token {
 		return parser.TokenAt(pos)
 	}
 }
@@ -133,7 +134,7 @@ func earleyTokenReceiver(parser *earley.Parser) termr.TokenRetriever {
 // AST creates an abstract syntax tree from a parse tree/forest.
 //
 // Returns a homogenous AST, a TeREx-environment and an error status.
-func AST(parsetree *sppf.Forest, tokRetr termr.TokenRetriever) (*terex.GCons,
+func AST(parsetree *sppf.Forest, tokRetr gorgo.TokenRetriever) (*terex.GCons,
 	*terex.Environment, error) {
 	ab := newASTBuilder()
 	env := ab.AST(parsetree, tokRetr)

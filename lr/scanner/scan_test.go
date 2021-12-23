@@ -8,21 +8,20 @@ import (
 
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 	"github.com/timtadh/lexmachine"
-	lex "github.com/timtadh/lexmachine"
 )
 
 var inputStrings = []string{
 	"1",
-	"1+1",
+	"1+12",
 	"Hello #World",
 	`x="mystring" // commented `,
-	"1,2,3",
+	"1,22,333",
 }
 
 var tokenCounts = []int{1, 3, 3, 3, 5}
 
 func TestScan1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.scanner")
 	defer teardown()
 	//
 	for i, input := range inputStrings {
@@ -30,11 +29,13 @@ func TestScan1(t *testing.T) {
 		reader := strings.NewReader(input)
 		name := fmt.Sprintf("input #%d", i)
 		scanner := GoTokenizer(name, reader)
-		tokval, token, pos, _ := scanner.NextToken(AnyToken)
+		//tokval, token, pos, _ := scanner.NextToken(AnyToken)
+		token := scanner.NextToken(AnyToken)
 		count := 0
-		for tokval != EOF {
-			t.Logf(" %4d | %15s | @%5d", tokval, Lexeme(token), pos)
-			tokval, token, pos, _ = scanner.NextToken(AnyToken)
+		for token.TokType() != EOF {
+			t.Logf(" %4d | %15s | @%5d", token.TokType(), token.Lexeme(), token.Span().From())
+			//tokval, token, pos, _ = scanner.NextToken(AnyToken)
+			token = scanner.NextToken(AnyToken)
 			count++
 		}
 		if count != tokenCounts[i] {
@@ -47,7 +48,7 @@ func TestScan1(t *testing.T) {
 var lispTokenCounts = []int{1, 3, 2, 3, 3}
 
 func TestLM(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.scanner")
 	defer teardown()
 	//
 	initTokens()
@@ -68,11 +69,13 @@ func TestLM(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		tokval, token, pos, _ := scanner.NextToken(AnyToken)
+		//tokval, token, pos, _ := scanner.NextToken(AnyToken)
+		token := scanner.NextToken(AnyToken)
 		count := 0
-		for tokval != EOF {
-			t.Logf(" %4d | %15s | @%5d", tokval, token.(*lex.Token).Lexeme, pos)
-			tokval, token, pos, _ = scanner.NextToken(AnyToken)
+		for token.TokType() != EOF {
+			t.Logf(" %4d | %15s | @%5d", token.TokType(), token.Lexeme(), token.Span().From())
+			//tokval, token, pos, _ = scanner.NextToken(AnyToken)
+			token = scanner.NextToken(AnyToken)
 			count++
 		}
 		if count != lispTokenCounts[i] {

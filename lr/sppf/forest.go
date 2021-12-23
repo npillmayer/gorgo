@@ -44,6 +44,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 )
@@ -162,7 +163,7 @@ func (f *Forest) SetRoot(symnode *SymbolNode) {
 // grammar symbol which has been reduced (Earley: completed).
 type SymbolNode struct { // this is [A (x…y)]
 	Symbol *lr.Symbol // A
-	Extent lr.Span    // (x…y), i.e., positions in the input covered by this symbol
+	Extent gorgo.Span // (x…y), i.e., positions in the input covered by this symbol
 }
 
 func makeSym(symbol *lr.Symbol) *SymbolNode {
@@ -171,7 +172,7 @@ func makeSym(symbol *lr.Symbol) *SymbolNode {
 
 // Use as makeSym(A).spanning(x, y), resulting in [A (x…y)]
 func (sn *SymbolNode) spanning(from, to uint64) *SymbolNode {
-	sn.Extent = lr.Span{from, to}
+	sn.Extent = gorgo.Span{from, to}
 	return sn
 }
 

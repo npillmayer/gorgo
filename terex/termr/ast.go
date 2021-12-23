@@ -15,10 +15,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/sppf"
 	"github.com/npillmayer/gorgo/terex"
-	"github.com/timtadh/lexmachine"
 )
 
 // ASTBuilder is a parse tree listener for building ASTs. It will construct an
@@ -26,14 +26,14 @@ import (
 // ambiguous grammars, the parse tree may happen to be a parse forest, containing
 // more than one derivation for a sentence.
 type ASTBuilder struct {
-	G                *lr.Grammar        // input grammar the parse forest stems from
-	Env              *terex.Environment // environment for symbols of the AST to create
-	forest           *sppf.Forest       // input parse tree/forest
-	conflictStrategy sppf.Pruner        // how to deal with parse-forest ambiguities
-	toks             TokenRetriever     // retriever for parse tree leafs
-	rewriters        map[string]TermR   // term rewriters to apply
-	Error            func(error)        // user supplied handler for errors
-	stack            []*terex.GCons     // used for recursive operator walking
+	G                *lr.Grammar          // input grammar the parse forest stems from
+	Env              *terex.Environment   // environment for symbols of the AST to create
+	forest           *sppf.Forest         // input parse tree/forest
+	conflictStrategy sppf.Pruner          // how to deal with parse-forest ambiguities
+	toks             gorgo.TokenRetriever // retriever for parse tree leafs
+	rewriters        map[string]TermR     // term rewriters to apply
+	Error            func(error)          // user supplied handler for errors
+	stack            []*terex.GCons       // used for recursive operator walking
 }
 
 // ErrorHandler is an interface to process errors occuring during parsing.
@@ -78,7 +78,7 @@ func (ab *ASTBuilder) AddTermR(trew TermR) {
 
 // AST creates an abstract syntax tree from a parse tree/forest.
 // The type of ASTs we create is a homogenous abstract syntax tree.
-func (ab *ASTBuilder) AST(parseTree *sppf.Forest, tokRetr TokenRetriever) *terex.Environment {
+func (ab *ASTBuilder) AST(parseTree *sppf.Forest, tokRetr gorgo.TokenRetriever) *terex.Environment {
 	if parseTree == nil || tokRetr == nil {
 		return nil
 	}
@@ -94,10 +94,9 @@ func (ab *ASTBuilder) AST(parseTree *sppf.Forest, tokRetr TokenRetriever) *terex
 	return ab.Env
 }
 
-// TokenRetriever is a type for getting tokens at an input position.
-type TokenRetriever func(uint64) interface{}
-
 // --- sppf.Listener interface -----------------------------------------------
+
+var _ sppf.Listener = (*ASTBuilder)(nil)
 
 // EnterRule is part of sppf.Listener interface.
 // Not intended for direct client use.
@@ -225,14 +224,14 @@ func (ab *ASTBuilder) Terminal(tokval int, token interface{}, ctxt sppf.RuleCtxt
 	t := ab.toks(tokpos) // opaque token type
 	atom := terex.Atomize(&terex.Token{Name: terminal.Name, TokType: tokval, Token: t})
 	if t != nil {
-		s := ""
-		if tt, ok := t.(*lexmachine.Token); ok {
-			s = string(tt.Lexeme)
-		} else if tt, ok := t.(fmt.Stringer); ok {
-			s = tt.String()
-		} else {
-			s = t.(string)
-		}
+		s := t.Lexeme()
+		// if tt, ok := t.(*lexmachine.Token); ok {
+		// 	s = string(tt.Lexeme)
+		// } else if tt, ok := t.(fmt.Stringer); ok {
+		// 	s = tt.String()
+		// } else {
+		// 	s = t.(string)
+		// }
 		tracer().Debugf("CONS(terminal=%s) = %v @%d [%s]", terminal.Name, atom, tokpos, s)
 	} else {
 		tracer().Debugf("CONS(terminal=%s) = %v @%d", terminal.Name, atom, tokpos)

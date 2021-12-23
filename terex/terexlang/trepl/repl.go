@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr/earley"
 	"github.com/npillmayer/gorgo/lr/sppf"
 	"github.com/npillmayer/gorgo/terex"
 	"github.com/npillmayer/gorgo/terex/terexlang"
-	"github.com/npillmayer/gorgo/terex/termr"
 	"github.com/pterm/pterm"
 
 	"github.com/npillmayer/schuko/gtrace"
@@ -159,7 +159,7 @@ type Intp struct {
 	tree      *sppf.Forest
 	ast       *terex.GCons
 	env       *terex.Environment
-	tretr     termr.TokenRetriever
+	tretr     gorgo.TokenRetriever
 }
 
 func (intp *Intp) loadInitFile(filename string) {
@@ -286,7 +286,7 @@ func (intp *Intp) printResult(result terex.Element, env *terex.Environment) erro
 
 // Parse parses input for a given experimental grammar and returns a parse forest.
 //
-func Parse(ga *lr.LRAnalysis, input string) (*sppf.Forest, termr.TokenRetriever, error) {
+func Parse(ga *lr.LRAnalysis, input string) (*sppf.Forest, gorgo.TokenRetriever, error) {
 	level := tracer().GetTraceLevel()
 	tracer().SetTraceLevel(tracing.LevelError)
 	parser := earley.NewParser(ga, earley.GenerateTree(true))
@@ -298,7 +298,7 @@ func Parse(ga *lr.LRAnalysis, input string) (*sppf.Forest, termr.TokenRetriever,
 	}
 	tracer().SetTraceLevel(level)
 	tracer().Infof("Successfully parsed input")
-	tokretr := func(pos uint64) interface{} {
+	tokretr := func(pos uint64) gorgo.Token {
 		return parser.TokenAt(pos)
 	}
 	return parser.ParseForest(), tokretr, nil

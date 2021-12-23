@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/earley"
 	"github.com/npillmayer/gorgo/lr/scanner"
@@ -99,8 +100,8 @@ func TestAST2(t *testing.T) {
 	}
 }
 
-func earleyTokenReceiver(parser *earley.Parser) TokenRetriever {
-	return func(pos uint64) interface{} {
+func earleyTokenReceiver(parser *earley.Parser) gorgo.TokenRetriever {
+	return func(pos uint64) gorgo.Token {
 		return parser.TokenAt(pos)
 	}
 }

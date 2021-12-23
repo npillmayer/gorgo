@@ -3,6 +3,7 @@ package earley
 import (
 	"fmt"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 	"github.com/npillmayer/gorgo/lr/sppf"
@@ -10,8 +11,8 @@ import (
 )
 
 // TokenAt returns the input token at position pos.
-func (p *Parser) TokenAt(pos uint64) interface{} {
-	if pos >= 0 && pos < uint64(len(p.tokens)) {
+func (p *Parser) TokenAt(pos uint64) gorgo.Token {
+	if pos < uint64(len(p.tokens)) {
 		return p.tokens[pos+1] // tokens start at index 1
 	}
 	return nil
@@ -21,14 +22,15 @@ func (p *Parser) TokenAt(pos uint64) interface{} {
 
 // Listener is a type for walking a parse tree/forest.
 type Listener interface {
-	Reduce(sym *lr.Symbol, rule int, rhs []*RuleNode, span lr.Span, level int) interface{}
-	Terminal(tokenValue int, token interface{}, span lr.Span, level int) interface{}
+	Reduce(sym *lr.Symbol, rule int, rhs []*RuleNode, span gorgo.Span, level int) interface{}
+	//Terminal(tokenValue int, token interface{}, span gorgo.Span, level int) interface{}
+	Terminal(token gorgo.Token, level int) interface{}
 }
 
 // RuleNode represents a node occuring during a parse tree/forest walk.
 type RuleNode struct {
 	sym    *lr.Symbol
-	Extent lr.Span     // span of intput symbols this rule reduced
+	Extent gorgo.Span  // span of intput symbols this rule reduced
 	Value  interface{} // user defined value
 }
 
@@ -36,6 +38,29 @@ type RuleNode struct {
 // It is either a terminal or the LHS of a reduced rule.
 func (rnode *RuleNode) Symbol() *lr.Symbol {
 	return rnode.sym
+}
+
+// ersatzToken is a very unsophisticated token type used for terminal tokens.
+type ersatzToken struct {
+	kind   gorgo.TokType
+	lexeme string
+	span   gorgo.Span
+}
+
+func (t ersatzToken) TokType() gorgo.TokType {
+	return t.kind
+}
+
+func (t ersatzToken) Lexeme() string {
+	return t.lexeme
+}
+
+func (t ersatzToken) Value() interface{} {
+	return nil
+}
+
+func (t ersatzToken) Span() gorgo.Span {
+	return t.span
 }
 
 // --- Tree Walker -----------------------------------------------------------
@@ -126,7 +151,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 	//
 	rhs := reverse(item.Rule().RHS()) // we iterate backwards over RHS symbols of item
 	tracer().Debugf("Walk from item=%s (%d…%d)", item, item.Origin, pos)
-	extent := lr.Span{item.Origin, pos}
+	extent := gorgo.Span{item.Origin, pos}
 	l := len(rhs)
 	ruleNodes := make([]*RuleNode, l) // we will collect |RHS| children nodes
 	end := pos
@@ -139,10 +164,20 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		tracer().Debugf("Next symbol in rev(RHS) is #%d:%s, pos=%d, end=%d", n, B, pos, end)
 		if B.IsTerminal() { // collect a terminal node
 			tracer().Infof("Tree node    %d: %s", pos-1, B)
-			value := listener.Terminal(B.Value, p.tokens[pos], lr.Span{pos - 1, pos}, level+1)
+			//value := listener.Terminal(B.Value, p.tokens[pos], gorgo.Span{pos - 1, pos}, level+1)
+			var token gorgo.Token
+			if origToken := p.tokens[pos]; origToken == nil {
+				token = ersatzToken{
+					kind:   gorgo.TokType(B.Value),
+					lexeme: "⟨⟩",
+					span:   gorgo.Span{pos - 1, pos},
+				}
+			}
+			//value := listener.Terminal(B.Value, p.tokens[pos], gorgo.Span{pos - 1, pos}, level+1)
+			value := listener.Terminal(token, level+1)
 			ruleNodes[l-n-1] = &RuleNode{
 				sym:    B,
-				Extent: lr.Span{pos - 1, pos},
+				Extent: gorgo.Span{pos - 1, pos},
 				Value:  value,
 			}
 			pos--
@@ -363,7 +398,7 @@ func (tb *TreeBuilder) Forest() *sppf.Forest {
 }
 
 // Reduce is a listener method, called for Earley-completions.
-func (tb *TreeBuilder) Reduce(sym *lr.Symbol, rule int, rhs []*RuleNode, span lr.Span, level int) interface{} {
+func (tb *TreeBuilder) Reduce(sym *lr.Symbol, rule int, rhs []*RuleNode, span gorgo.Span, level int) interface{} {
 	if len(rhs) == 0 {
 		return tb.forest.AddEpsilonReduction(sym, rule, span.From())
 	}
@@ -375,10 +410,12 @@ func (tb *TreeBuilder) Reduce(sym *lr.Symbol, rule int, rhs []*RuleNode, span lr
 }
 
 // Terminal is a listener method, called when matching input tokens.
-func (tb *TreeBuilder) Terminal(tokval int, token interface{}, span lr.Span, level int) interface{} {
+func (tb *TreeBuilder) Terminal(token gorgo.Token, level int) interface{} {
+	//func (tb *TreeBuilder) Terminal(tokval int, token interface{}, span gorgo.Span, level int) interface{} {
 	// TODO
-	t := tb.grammar.Terminal(tokval)
-	return tb.forest.AddTerminal(t, span.From())
+	t := tb.grammar.Terminal(int(token.TokType()))
+	//t := tb.grammar.Terminal(tokval)
+	return tb.forest.AddTerminal(t, token.Span().From())
 }
 
 var _ Listener = &TreeBuilder{}

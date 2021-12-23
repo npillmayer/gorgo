@@ -9,7 +9,10 @@ folder of this module.
 Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 */
 
-import "github.com/npillmayer/gorgo/lr"
+import (
+	"github.com/npillmayer/gorgo"
+	"github.com/npillmayer/gorgo/lr"
+)
 
 /*
 Traversing a parse forest resulting from an ambiguous grammar in practice
@@ -77,7 +80,7 @@ func (c *Cursor) RHS(sym *SymbolNode) (int, []*RuleNode) {
 }
 
 // Span returns the span of input symbols this rule covers.
-func (rnode *RuleNode) Span() lr.Span {
+func (rnode *RuleNode) Span() gorgo.Span {
 	return rnode.symbol.Extent
 }
 
@@ -327,13 +330,13 @@ type Listener interface {
 
 // RuleCtxt is a context structure for Listeners.
 type RuleCtxt struct {
-	Span      lr.Span     // span of input symbols covered by this rule
+	Span      gorgo.Span  // span of input symbols covered by this rule
 	Level     int         // nesting level
 	RuleIndex int         // -1 for terminals
 	Attrs     interface{} // client-defined attributes local to node
 }
 
-func makeCtxt(span lr.Span, level int, rule int, attrs interface{}) RuleCtxt {
+func makeCtxt(span gorgo.Span, level int, rule int, attrs interface{}) RuleCtxt {
 	return RuleCtxt{
 		Span:      span,
 		Level:     level,

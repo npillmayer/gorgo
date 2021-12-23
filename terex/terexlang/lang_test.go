@@ -25,11 +25,11 @@ func TestScanner(t *testing.T) {
 	})
 	done := false
 	for !done {
-		tokval, token, _, _ := scan.NextToken(nil)
-		if tokval == -1 {
+		token := scan.NextToken(nil)
+		if token.TokType() == -1 {
 			done = true
 		} else {
-			t.Logf("token = %v with value = %d", token, tokval)
+			t.Logf("token = %q with value = %d", token.Lexeme(), token.TokType())
 		}
 	}
 }

@@ -64,6 +64,7 @@ import (
 
 	"github.com/cnf/structhash"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 	"github.com/npillmayer/gorgo/lr/scanner"
@@ -81,7 +82,7 @@ type Parser struct {
 	ga        *lr.LRAnalysis              // the analyzed grammar we operate on
 	scanner   scanner.Tokenizer           // scanner deliveres tokens
 	states    []*iteratable.Set           // list of states, each a set of Earley-items
-	tokens    []interface{}               // we remember all input tokens, if requested
+	tokens    []gorgo.Token               // we remember all input tokens, if requested
 	sc        uint64                      // state counter
 	mode      uint                        // flags controlling some behaviour of the parser
 	Error     func(p *Parser, msg string) // Error is called for each error encountered
@@ -95,7 +96,7 @@ func NewParser(ga *lr.LRAnalysis, opts ...Option) *Parser {
 		ga:        ga,
 		scanner:   nil,
 		states:    make([]*iteratable.Set, 1, 512), // pre-alloc first state
-		tokens:    make([]interface{}, 1, 512),     // pre-alloc first slot
+		tokens:    make([]gorgo.Token, 1, 512),     // pre-alloc first slot
 		backlinks: make(map[string]lr.Item),
 		sc:        0,
 		mode:      optionStoreTokens,
@@ -110,7 +111,7 @@ func NewParser(ga *lr.LRAnalysis, opts ...Option) *Parser {
 type inputSymbol struct {
 	tokval int         // token value
 	token  interface{} // visual representation of the symbol, if any
-	span   lr.Span     // position and extent in the input stream
+	span   gorgo.Span  // position and extent in the input stream
 }
 
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.12.4254&rep=rep1&type=pdf
@@ -151,16 +152,18 @@ func (p *Parser) Parse(scan scanner.Tokenizer, listener Listener) (accept bool, 
 	startItem, _ := lr.StartItem(p.ga.Grammar().Rule(0)) // create S′→•S
 	p.states[0] = iteratable.NewSet(0)                   // S0
 	p.states[0].Add(startItem)                           // S0 = { [S′→•S, 0] }
-	tokval, token, start, len := p.scanner.NextToken(scanner.AnyToken)
+	//tokval, token, start, len := p.scanner.NextToken(scanner.AnyToken)
+	token := p.scanner.NextToken(scanner.AnyToken)
 	for { // outer loop over Si per input token xi
-		tracer().Debugf("Scanner read '%v|%d' @ %d", token, tokval, start)
-		x := inputSymbol{tokval, token, lr.Span{start, start + len}}
+		tracer().Debugf("Scanner read '%v|%d' @ %v", token, token.TokType(), token.Span())
+		x := inputSymbol{int(token.TokType()), token, token.Span()}
 		i := p.setupNextState(token)
 		p.innerLoop(i, x)
-		if tokval == scanner.EOF {
+		if x.tokval == scanner.EOF {
 			break
 		}
-		tokval, token, start, len = p.scanner.NextToken(scanner.AnyToken)
+		//tokval, token, start, len = p.scanner.NextToken(scanner.AnyToken)
+		token = p.scanner.NextToken(scanner.AnyToken)
 	}
 	if accept = p.checkAccept(); accept && p.hasmode(optionGenerateTree) {
 		p.buildTree()
@@ -169,7 +172,7 @@ func (p *Parser) Parse(scan scanner.Tokenizer, listener Listener) (accept bool, 
 }
 
 // Invariant: we're in set Si and prepare Si+1
-func (p *Parser) setupNextState(token interface{}) uint64 {
+func (p *Parser) setupNextState(token gorgo.Token) uint64 {
 	// first one has already been created before outer loop
 	p.states = append(p.states, iteratable.NewSet(0))
 	if p.hasmode(optionStoreTokens) {
