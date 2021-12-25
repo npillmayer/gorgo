@@ -172,6 +172,8 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 					lexeme: "⟨⟩",
 					span:   gorgo.Span{pos - 1, pos},
 				}
+			} else {
+				token = origToken
 			}
 			//value := listener.Terminal(B.Value, p.tokens[pos], gorgo.Span{pos - 1, pos}, level+1)
 			value := listener.Terminal(token, level+1)

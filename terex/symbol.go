@@ -140,18 +140,21 @@ func (p properties) Set(key string, value interface{}) properties {
 }
 
 // Token represents a grammar terminal, and a corresponding input token, respectively.
+/*
 type Token struct {
-	Name    string
-	TokType int
-	Token   interface{}
-	Value   interface{}
+	Name  string
+	Token gorgo.Token
+	// TokType int
+	// Token   interface{}
+	// Value   interface{}
 }
 
+// TODO for printing out token values we need to consult a gorgo.TokTypeStringer
 func (t Token) String() string {
-	if t.Value == nil {
+	if t.Token.Value() == nil {
 		return t.Name
 	}
-	switch v := t.Value.(type) {
+	switch v := t.Token.Value().(type) {
 	case float64:
 		return fmt.Sprintf("%s[%g]", t.Name, v)
 	case string:
@@ -159,6 +162,7 @@ func (t Token) String() string {
 	}
 	return t.Name + "[?]"
 }
+*/
 
 // --- Environments ----------------------------------------------------------
 

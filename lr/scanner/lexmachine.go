@@ -85,6 +85,7 @@ func (lms *LMScanner) NextToken(expected []int) gorgo.Token {
 		//return EOF, nil, 0, 0
 		return defaultToken{kind: EOF, lexeme: "", span: gorgo.Span{0, 0}}
 	}
+	tracer().Debugf("tok is %T | %v", tok, tok)
 	token := tok.(*lexmachine.Token)
 	//tokval := token.Type
 	//start := uint64(token.StartColumn)

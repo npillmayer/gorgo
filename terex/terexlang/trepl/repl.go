@@ -16,8 +16,10 @@ import (
 	"github.com/pterm/pterm"
 
 	"github.com/npillmayer/schuko/gtrace"
+	"github.com/npillmayer/schuko/schukonf/testconfig"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gologadapter"
+	"github.com/npillmayer/schuko/tracing/trace2go"
 
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/scanner"
@@ -80,6 +82,17 @@ func main() {
 	// set up logging
 	initDisplay()
 	gtrace.SyntaxTracer = gologadapter.New()
+	tracing.RegisterTraceAdapter("go", gologadapter.GetAdapter(), false)
+	conf := testconfig.Conf{
+		"tracing.adapter": "go",
+		"trace.gorgo.lr":  "Info",
+	}
+	if err := trace2go.ConfigureRoot(conf, "trace", trace2go.ReplaceTracers(true)); err != nil {
+		fmt.Printf("error configuring tracing")
+		os.Exit(1)
+	}
+	tracing.SetTraceSelector(trace2go.Selector())
+
 	tlevel := flag.String("trace", "Info", "Trace level [Debug|Info|Error]")
 	initf := flag.String("init", "", "Initial load")
 	flag.Parse()

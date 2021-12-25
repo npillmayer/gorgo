@@ -3,6 +3,7 @@ package terex
 import (
 	"testing"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 )
 
@@ -13,6 +14,14 @@ func TestAssignability(t *testing.T) {
 		t.Logf("internalOp %v assignable to Operator", x)
 	default:
 		t.Errorf("Expected internalOp to be assignable to Operator")
+	}
+}
+
+func TestAtomizeToken(t *testing.T) {
+	token := token{}
+	a := Atomize(token)
+	if a.Type() != TokenType {
+		t.Errorf("expected atom to be of type 'token', is %d", a.Type())
 	}
 }
 
@@ -200,3 +209,23 @@ func TestMap(t *testing.T) {
 		t.Errorf("Call to _Add failed")
 	}
 } */
+
+// ---------------------------------------------------------------------------
+
+type token struct{}
+
+func (t token) TokType() gorgo.TokType {
+	return 1
+}
+
+func (t token) Value() interface{} {
+	return nil
+}
+
+func (t token) Lexeme() string {
+	return "-"
+}
+
+func (t token) Span() gorgo.Span {
+	return gorgo.Span{0, 1}
+}

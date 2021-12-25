@@ -222,7 +222,16 @@ func (ab *ASTBuilder) Terminal(tokval int, token interface{}, ctxt sppf.RuleCtxt
 	terminal := ab.G.Terminal(tokval)
 	tokpos := ctxt.Span.From()
 	t := ab.toks(tokpos) // opaque token type
-	atom := terex.Atomize(&terex.Token{Name: terminal.Name, TokType: tokval, Token: t})
+	//atom := terex.Atomize(&terex.Token{Name: terminal.Name, TokType: tokval, Token: t})
+	if t == nil {
+		t = ersatzToken{
+			kind:   gorgo.TokType(tokval),
+			lexeme: terminal.Name,
+			span:   ctxt.Span,
+		}
+	}
+	//atom := terex.Atomize(&terex.Token{Name: terminal.Name, Token: t})
+	atom := terex.Atomize(token)
 	if t != nil {
 		s := t.Lexeme()
 		// if tt, ok := t.(*lexmachine.Token); ok {
@@ -387,3 +396,26 @@ func appendTee(cons *terex.GCons, list *terex.GCons) *terex.GCons {
 	return tee
 }
 */
+
+// ersatzToken is a very unsophisticated token type used for terminal tokens.
+type ersatzToken struct {
+	kind   gorgo.TokType
+	lexeme string
+	span   gorgo.Span
+}
+
+func (t ersatzToken) TokType() gorgo.TokType {
+	return t.kind
+}
+
+func (t ersatzToken) Lexeme() string {
+	return t.lexeme
+}
+
+func (t ersatzToken) Value() interface{} {
+	return nil
+}
+
+func (t ersatzToken) Span() gorgo.Span {
+	return t.span
+}

@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/schuko/tracing"
 )
 
@@ -101,7 +102,8 @@ func Atomize(thing interface{}) Atom {
 		atom.typ = OperatorType
 	case *Symbol:
 		atom.typ = VarType
-	case *Token:
+	//case *Token:
+	case gorgo.Token:
 		atom.typ = TokenType
 	case *Environment:
 		atom.typ = EnvironmentType
@@ -144,8 +146,9 @@ func (a Atom) String() string {
 		if a.Data == nil {
 			return ":any"
 		}
-		t := a.Data.(*Token)
-		return fmt.Sprintf(":%s", t.String())
+		//t := a.Data.(*Token)
+		t := a.Data.(gorgo.Token)
+		return fmt.Sprintf(":t(%d)", t.TokType())
 	case OperatorType:
 		if a.Data == nil {
 			return "Op:any"
@@ -946,9 +949,11 @@ func dataMatch(d1 interface{}, d2 interface{}, t AtomType, env *Environment) boo
 		return true
 	}
 	if t == TokenType && d2 != nil {
-		tok1, _ := d1.(*Token)
-		if tok2, ok := d2.(*Token); ok {
-			if tok1.TokType == tok2.TokType { // only tokval must match
+		//tok1, _ := d1.(*Token)
+		tok1, _ := d1.(gorgo.Token)
+		//if tok2, ok := d2.(*Token); ok {
+		if tok2, ok := d2.(gorgo.Token); ok {
+			if tok1.TokType() == tok2.TokType() { // only tokval must match
 				return true
 			}
 		}

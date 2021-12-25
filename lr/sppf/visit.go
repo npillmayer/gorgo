@@ -6,7 +6,7 @@ License
 Governed by a 3-Clause BSD license. License file may be found in the root
 folder of this module.
 
-Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
+Copyright © 2017–2022 Norbert Pillmayer <norbert@pillmayer.com>
 */
 
 import (
@@ -21,7 +21,7 @@ mainly comes in two variants:
 - The client has additional knowledge of how to prune the parse forest and
   select one tree. Using arithmetic expression 1+2+3 as an example, selecting
   the tree representing left-associativity would result in the pruning of 1+(2+3),
-  leaving (1+2)+3 as the un-ambiguous parse-tree.
+  leaving (1+2)+3 as the unambiguous parse-tree.
 
 - The choice of parse tree is irrelevant. An example for this is determining
   the result of an arithmetic expression, ignoring associativity: 1+2+3=5,

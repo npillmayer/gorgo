@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr/scanner"
 	"github.com/timtadh/lexmachine"
 )
@@ -30,7 +31,7 @@ var keywords = []string{"nil", "t"}
 var tokens = []string{"COMMENT", "ID", "NUM", "STRING", "VAR"}
 
 // tokenIds will be set in initTokens()
-var tokenIds map[string]int // A map from the token names to their int ids
+var tokenIds map[string]int // A map from the token names to their token types
 
 var initOnce sync.Once // monitors one-time initialization
 func initTokens() {
@@ -92,4 +93,33 @@ func makeToken(s string) lexmachine.Action {
 		panic(fmt.Errorf("unknown token: %s", s))
 	}
 	return scanner.MakeToken(s, id)
+	// return func(scan *lexmachine.Scanner, match *machines.Match) (interface{}, error) {
+	// 	return &LispToken{
+	// 		toktype: gorgo.TokType(id),
+	// 		lexeme:  string(match.Bytes),
+	// 	}, nil
+	// }
+}
+
+type LispToken struct {
+	toktype gorgo.TokType
+	lexeme  string
+	value   interface{}
+	span    gorgo.Span
+}
+
+func (t LispToken) TokType() gorgo.TokType {
+	return t.toktype
+}
+
+func (t LispToken) Lexeme() string {
+	return t.lexeme
+}
+
+func (t LispToken) Value() interface{} {
+	return t.value
+}
+
+func (t LispToken) Span() gorgo.Span {
+	return t.span
 }

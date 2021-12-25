@@ -23,7 +23,6 @@ import (
 	"github.com/npillmayer/gorgo/terex"
 	"github.com/npillmayer/gorgo/terex/termr"
 	"github.com/npillmayer/schuko/tracing"
-	"github.com/timtadh/lexmachine"
 )
 
 // --- Grammar ---------------------------------------------------------------
@@ -105,7 +104,7 @@ func newASTBuilder() *termr.ASTBuilder {
 }
 
 // Parse parses an input string, given in TeREx language format. It returns the
-// parse forest and a TokenReceiver, or an error in case of failure.
+// parse forest and a TokenRetriever, or an error in case of failure.
 //
 // Clients may use a terex.ASTBuilder to create an abstract syntax tree
 // from the parse forest.
@@ -120,7 +119,7 @@ func Parse(input string) (*sppf.Forest, gorgo.TokenRetriever, error) {
 	if err != nil {
 		return nil, nil, err
 	} else if !accept {
-		return nil, nil, fmt.Errorf("Not a valid TeREx expression")
+		return nil, nil, fmt.Errorf("not a valid TeREx expression")
 	}
 	return parser.ParseForest(), earleyTokenReceiver(parser), nil
 }
@@ -134,13 +133,12 @@ func earleyTokenReceiver(parser *earley.Parser) gorgo.TokenRetriever {
 // AST creates an abstract syntax tree from a parse tree/forest.
 //
 // Returns a homogenous AST, a TeREx-environment and an error status.
-func AST(parsetree *sppf.Forest, tokRetr gorgo.TokenRetriever) (*terex.GCons,
-	*terex.Environment, error) {
+func AST(parsetree *sppf.Forest, tokRetr gorgo.TokenRetriever) (*terex.GCons, *terex.Environment, error) {
 	ab := newASTBuilder()
 	env := ab.AST(parsetree, tokRetr)
 	if env == nil {
 		tracer().Errorf("Cannot create AST from parsetree")
-		return nil, nil, fmt.Errorf("Error while creating AST")
+		return nil, nil, fmt.Errorf("error while creating AST")
 	}
 	ast := env.AST
 	tracer().Infof("AST: %s", env.AST.ListString())
@@ -444,30 +442,33 @@ func convertTerminalToken(el terex.Element, env *terex.Environment) terex.Elemen
 	if atom.Type() != terex.TokenType {
 		return el
 	}
-	t := atom.Data.(*terex.Token)
-	token := t.Token.(*lexmachine.Token)
-	tracer().Infof("Convert terminal token: '%v'", string(token.Lexeme))
-	switch token.Type {
+	//t := atom.Data.(*terex.Token)
+	t := atom.Data.(gorgo.Token)
+	//token := t.Token.(*lexmachine.Token)
+	panic(fmt.Sprintf("token is of type %T", t))
+	token := t.(*LispToken)
+	tracer().Infof("Convert terminal token: '%v'", string(t.Lexeme()))
+	switch int(t.TokType()) {
 	case tokenIds["NUM"]:
-		if f, err := strconv.ParseFloat(string(token.Lexeme), 64); err == nil {
+		if f, err := strconv.ParseFloat(string(t.Lexeme()), 64); err == nil {
 			tracer().Debugf("   t.Value=%g", f)
-			t.Value = f
+			token.value = f
 		} else {
 			tracer().Errorf("   %s", err.Error())
 			return terex.Elem(terex.Atomize(err))
 		}
 	case tokenIds["STRING"]:
-		if (len(token.Lexeme)) <= 2 {
-			t.Value = ""
+		if (len(t.Lexeme())) <= 2 {
+			token.value = ""
 		} else { // trim off "…"
 			//runes := []rune(string(token.Lexeme))  // unnecessary
-			t.Value = string(token.Lexeme[1 : len(token.Lexeme)-1])
+			token.value = string(t.Lexeme()[1 : len(t.Lexeme())-1])
 		}
 	case tokenIds["VAR"]:
 		panic("VAR type tokens not yet implemented")
-		fallthrough
+		//fallthrough
 	case tokenIds["ID"]:
-		s := string(token.Lexeme)
+		s := string(t.Lexeme())
 		//sym := terex.GlobalEnvironment.Intern(s, true)
 		sym := env.Intern(s, true)
 		if sym != nil {
@@ -483,14 +484,15 @@ type symbolPreservingResolver struct{}
 func (r symbolPreservingResolver) Resolve(atom terex.Atom, env *terex.Environment, asOp bool) (
 	terex.Element, error) {
 	if atom.Type() == terex.TokenType {
-		t := atom.Data.(*terex.Token)
-		token := t.Token.(*lexmachine.Token)
-		tracer().Debugf("Resolve terminal token: '%v'", string(token.Lexeme))
-		switch token.Type {
+		token := atom.Data.(gorgo.Token)
+		//token := t.Token.(*lexmachine.Token)
+		//token := t.Token.(*LispToken)
+		tracer().Debugf("Resolve terminal token: '%v'", string(token.Lexeme()))
+		switch int(token.TokType()) {
 		case tokenIds["NUM"]:
-			return terex.Elem(t.Value.(float64)), nil
+			return terex.Elem(token.Value().(float64)), nil
 		case tokenIds["STRING"]:
-			return terex.Elem(t.Value.(string)), nil
+			return terex.Elem(token.Value().(string)), nil
 		}
 	}
 	return terex.Elem(atom), nil
