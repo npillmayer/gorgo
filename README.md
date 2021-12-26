@@ -9,7 +9,7 @@ All these tools have their value and I appreciate the availability of compiler-c
 
 ## Package Organisation
 
-<img alt="GoRGO package organisation" src="http://npillmayer.github.io/GoRGO/img/package-lr.png" width="210" style="max-width:210">
+<img alt="GoRGO package organisation" src="http://npillmayer.github.io/GoRGO/img/package-lr.png" width="350" style="max-width:350">
 
 ## Status
 This is very much work in progress, not yet intended for production use. Please be patient. If you're interested in an exotic topic like parser creation and term rewriting, I invite you to follow along on [my blog](https://npillmayer.github.io/GoRGO/).
