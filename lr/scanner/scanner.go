@@ -1,3 +1,17 @@
+/*
+Package scanner defines an interface for scanners to be used with parsers of package lr.
+
+Two default scanner implementations are provided: (1) a thin wrapper over the Go std lib
+'text/scanner', and (2) an adapter for lexmachine.
+
+License
+
+Governed by a 3-Clause BSD license. License file may be found in the root
+folder of this module.
+
+Copyright © 2017–2022 Norbert Pillmayer <norbert@pillmayer.com>
+
+*/
 package scanner
 
 import (
@@ -10,13 +24,10 @@ import (
 	"github.com/npillmayer/schuko/tracing"
 )
 
-// tracer traces with key 'gorgo.lr'.
+// tracer traces with key 'gorgo.scanner'.
 func tracer() tracing.Trace {
-	return tracing.Select("gorgo.lr")
+	return tracing.Select("gorgo.scanner")
 }
-
-// AnyToken is a helper flag: expect any token from the scanner.
-var AnyToken []int = nil
 
 // EOF is identical to text/scanner.EOF.
 // Token types are replicated here for practical reasons.
@@ -33,8 +44,7 @@ const (
 
 // Tokenizer is a scanner interface.
 type Tokenizer interface {
-	//NextToken(expected []int) (tokval int, token interface{}, start, len uint64)
-	NextToken(expected []int) gorgo.Token
+	NextToken() gorgo.Token
 	SetErrorHandler(func(error))
 }
 
@@ -76,8 +86,7 @@ func (t *DefaultTokenizer) SetErrorHandler(h func(error)) {
 }
 
 // NextToken is part of the Tokenizer interface.
-func (t *DefaultTokenizer) NextToken(exp []int) gorgo.Token {
-	//func (t *DefaultTokenizer) NextToken(exp []int) (int, interface{}, uint64, uint64) {
+func (t *DefaultTokenizer) NextToken() gorgo.Token {
 	t.lastToken = t.Scan()
 	if t.lastToken == scanner.EOF {
 		gtrace.SyntaxTracer.Debugf("DefaultTokenizer reached end of input")
@@ -86,8 +95,6 @@ func (t *DefaultTokenizer) NextToken(exp []int) gorgo.Token {
 		(t.lastToken == scanner.RawString || t.lastToken == scanner.Char) {
 		t.lastToken = scanner.String
 	}
-	//	return int(t.lastToken), t.TokenText(), uint64(t.Position.Offset),
-	//		uint64(t.Pos().Offset - t.Position.Offset)
 	return defaultToken{
 		kind:   gorgo.TokType(t.lastToken),
 		lexeme: t.TokenText(),

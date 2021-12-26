@@ -71,8 +71,7 @@ func (lms *LMScanner) SetErrorHandler(h func(error)) {
 // NextToken is part of the Tokenizer interface.
 //
 // Warning: The current implementation will ignore the 'expected'-argument.
-func (lms *LMScanner) NextToken(expected []int) gorgo.Token {
-	//func (lms *LMScanner) NextToken(expected []int) (int, interface{}, uint64, uint64) {
+func (lms *LMScanner) NextToken() gorgo.Token {
 	tok, err, eof := lms.scanner.Next()
 	for err != nil {
 		lms.Error(err)
@@ -82,15 +81,10 @@ func (lms *LMScanner) NextToken(expected []int) gorgo.Token {
 		tok, err, eof = lms.scanner.Next()
 	}
 	if eof {
-		//return EOF, nil, 0, 0
 		return defaultToken{kind: EOF, lexeme: "", span: gorgo.Span{0, 0}}
 	}
 	tracer().Debugf("tok is %T | %v", tok, tok)
 	token := tok.(*lexmachine.Token)
-	//tokval := token.Type
-	//start := uint64(token.StartColumn)
-	//length := uint64(len(token.Lexeme))
-	//return tokval, token, start, length
 	return defaultToken{
 		kind:   gorgo.TokType(token.Type),
 		lexeme: string(string(token.Lexeme)),

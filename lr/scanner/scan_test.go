@@ -30,12 +30,12 @@ func TestScan1(t *testing.T) {
 		name := fmt.Sprintf("input #%d", i)
 		scanner := GoTokenizer(name, reader)
 		//tokval, token, pos, _ := scanner.NextToken(AnyToken)
-		token := scanner.NextToken(AnyToken)
+		token := scanner.NextToken()
 		count := 0
 		for token.TokType() != EOF {
 			t.Logf(" %4d | %15s | @%5d", token.TokType(), token.Lexeme(), token.Span().From())
 			//tokval, token, pos, _ = scanner.NextToken(AnyToken)
-			token = scanner.NextToken(AnyToken)
+			token = scanner.NextToken()
 			count++
 		}
 		if count != tokenCounts[i] {
@@ -70,12 +70,12 @@ func TestLM(t *testing.T) {
 			t.Error(err)
 		}
 		//tokval, token, pos, _ := scanner.NextToken(AnyToken)
-		token := scanner.NextToken(AnyToken)
+		token := scanner.NextToken()
 		count := 0
 		for token.TokType() != EOF {
 			t.Logf(" %4d | %15s | @%5d", token.TokType(), token.Lexeme(), token.Span().From())
 			//tokval, token, pos, _ = scanner.NextToken(AnyToken)
-			token = scanner.NextToken(AnyToken)
+			token = scanner.NextToken()
 			count++
 		}
 		if count != lispTokenCounts[i] {

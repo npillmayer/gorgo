@@ -25,7 +25,7 @@ func TestScanner(t *testing.T) {
 	})
 	done := false
 	for !done {
-		token := scan.NextToken(nil)
+		token := scan.NextToken()
 		if token.TokType() == -1 {
 			done = true
 		} else {
@@ -49,20 +49,6 @@ func TestAssignability(t *testing.T) {
 		t.Errorf("Expected terexlang.sExprTermR to implement termr.TermR interface")
 	}
 }
-
-// func TestMatchAnyOp(t *testing.T) {
-// 	gtrace.SyntaxTracer = gotestingadapter.New()
-// 	teardown := gotestingadapter.RedirectTracing(t)
-// 	defer teardown()
-// 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-// 	initTokens()
-// 	initDefaultPatterns()
-// 	l1 := terex.List(makeASTTermR("S", "start").Operator(), 1)
-// 	t.Logf("l1 = %s, pattern = %s", l1.ListString(), SingleTokenArg.ListString())
-// 	if !SingleTokenArg.Match(l1, terex.GlobalEnvironment) {
-// 		t.Errorf("Expected l1 to match pattern (Op any)")
-// 	}
-// }
 
 func TestMatchAnything(t *testing.T) {
 	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
@@ -93,13 +79,6 @@ func TestParse(t *testing.T) {
 	if !accept {
 		t.Errorf("No accept. Not a valid TeREx expression")
 	}
-	/* 	parsetree := parser.ParseForest()
-	   	tmpfile, err := ioutil.TempFile(".", "eval-parsetree-*.dot")
-	   	if err != nil {
-	   		t.Error("cannot open tmp file for graphviz output")
-	   	}
-	   	sppf.ToGraphViz(parsetree, tmpfile)
-	   	T().Infof("Exported parse tree to %s", tmpfile.Name()) */
 }
 
 func TestAST(t *testing.T) {
@@ -127,8 +106,6 @@ func TestAST(t *testing.T) {
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
 	tracer().Infof("AST: %s", ast.ListString())
 	tracer().Infof("####################################################")
-	// terseAst := terex.GlobalEnvironment.Quote(ast)
-	// T().Infof("reduced AST: %s", terseAst.ListString())
 }
 
 func TestQuoteAST(t *testing.T) {
@@ -170,48 +147,3 @@ func debugString(e terex.Element) string {
 	}
 	return e.AsList().IndentedListString()
 }
-
-/*
-func TestQuote(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
-	terex.InitGlobalEnvironment()
-	input := "(Hello 'World 1)"
-	result, _ := Quote(input)
-	if result.Length() != 2 {
-		t.Errorf("Expected resulting list to be of length 2, is %d", result.Length())
-	} else {
-		t.Logf("AST=%s", result.Car.Data.(*terex.GCons).ListString())
-		if result.Car.Data.(*terex.GCons).Length() != 3 {
-			t.Errorf("Expected AST to be of length 3, is %d", result.Cadr().Length())
-		}
-	}
-}
-*/
-
-/* func NoTestEval(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
-	terex.InitGlobalEnvironment()
-	sym := terex.GlobalEnvironment.FindSymbol("+", false)
-	if sym == nil {
-		t.Error("Expected to find operator '+' in global environment")
-	}
-	input := "(+ 1 2 3)"
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	result, env := Eval(input)
-	if result.Length() != 2 {
-		t.Errorf("Expected resulting list to be of length 2, is %d", result.Length())
-	} else {
-		ast := env.AST.Cadr()
-		t.Logf("AST=%s", result.Car.Data.(*terex.GCons).ListString())
-		if ast.Length() != 3 {
-			t.Errorf("Expected AST to be of length 3, is %d", ast.Length())
-		}
-	}
-	t.Fail()
-} */

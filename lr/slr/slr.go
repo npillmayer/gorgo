@@ -134,13 +134,10 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 	p.stack = append(p.stack, stackitem{S.ID, 0, gorgo.Span{0, 0}}) // push S
 	// http://www.cse.unt.edu/~sweany/CSCE3650/HANDOUTS/LRParseAlg.pdf
 	//tokval, token, pos, length := scan.NextToken(nil)
-	token := scan.NextToken(nil)
+	token := scan.NextToken()
 	tokval := token.TokType()
 	done := false
 	for !done {
-		// if token == nil {
-		// 	tokval = scanner.EOF
-		// }
 		tracer().Debugf("got token %q/%d from scanner", token.Lexeme(), tokval)
 		state := p.stack[len(p.stack)-1] // TOS
 		action := p.actionT.Value(state.stateID, int(tokval))
@@ -157,7 +154,7 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 			p.stack = append(p.stack, // push a terminal state onto stack
 				stackitem{nextstate, int(tokval), token.Span()}) //span{pos, pos + length - 1}})
 			//tokval, token, pos, length = scan.NextToken(nil)
-			token = scan.NextToken(nil)
+			token = scan.NextToken()
 			tokval = token.TokType()
 		} else if action > 0 { // reduce action
 			rule := p.G.Rule(int(action))
@@ -206,96 +203,6 @@ func (p *Parser) reduce(stateID int, rule *lr.Rule) (int, gorgo.Span) {
 	nextstate := p.gotoT.Value(state.stateID, lhs.Value)
 	return int(nextstate), handlespan
 }
-
-// --- Scanner ----------------------------------------------------------
-
-// A Token type, if you want to use it. Tokens of this type are returned
-// by StdScanner.
-//
-// Clients may provide their own token data type.
-/*
-type Token struct {
-	Value  int
-	Lexeme []byte
-}
-*/
-
-// StdScanner provides a default scanner implementation, but clients are free (and
-// even encouraged) to provide their own. This implementation is based on
-// stdlib's text/scanner.
-/*
-type StdScanner struct {
-	reader io.Reader // will be io.ReaderAt in the future
-	scan   scanner.Tokenizer
-}
-*/
-
-// NewStdScanner creates a new default scanner from a Reader.
-/*
-func NewStdScanner(r io.Reader) *StdScanner {
-	s := &StdScanner{reader: r}
-	s.scan.Init(r)
-	s.scan.Filename = "Go symbols"
-	return s
-}
-*/
-
-// MoveTo is not functional for default scanners.
-// Default scanners allow sequential processing only.
-/*
-func (s *StdScanner) MoveTo(position uint64) {
-	T().Errorf("MoveTo() not yet supported by parser.StdScanner")
-	panic("MoveTo() not yet supported by parser.StdScanner")
-}
-*/
-
-// NextToken gets the next token scanned from the input source. Returns the token
-// value and a user-defined token type.
-//
-// Clients may provide an array of token values, one of which is expected
-// at the current parse position. For the default scanner, as of now this is
-// unused. In the future it will help with error-repair.
-/*
-func (s *StdScanner) NextToken(expected []int) (int, interface{}, uint64, uint64) {
-	tokval := int(s.scan.Scan())
-	token := &Token{Value: tokval, Lexeme: []byte(s.scan.TokenText())}
-	T().P("token", tokenString(tokval)).Debugf("scanned token at %s = \"%s\"",
-		s.scan.Position, s.scan.TokenText())
-	return tokval, token, uint64(s.scan.Position.Offset),
-		uint64(s.scan.Pos().Offset - s.scan.Position.Offset)
-}
-
-func tokenString(tok int) string {
-	return scanner.TokenString(rune(tok))
-}
-*/
-
-// --- spans ----------------------------------------
-// substituted by gorgo.Span @ Wed Dec 22 15:27:11 CET 2021
-
-/*
-func (s span) from() uint64 {
-	return s[0]
-}
-
-func (s span) to() uint64 {
-	return s[1]
-}
-
-func (s span) isNull() bool {
-	return s == span{}
-}
-
-func (s span) extendFrom(other span) span {
-	if other.from() < s.from() {
-		s[0] = other[0]
-	}
-	if other.to() > s.to() {
-		s[1] = other[1]
-	}
-	return s
-}
-*/
 
 // --- Helpers ----------------------------------------------------------
 

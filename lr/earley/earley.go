@@ -152,8 +152,7 @@ func (p *Parser) Parse(scan scanner.Tokenizer, listener Listener) (accept bool, 
 	startItem, _ := lr.StartItem(p.ga.Grammar().Rule(0)) // create S′→•S
 	p.states[0] = iteratable.NewSet(0)                   // S0
 	p.states[0].Add(startItem)                           // S0 = { [S′→•S, 0] }
-	//tokval, token, start, len := p.scanner.NextToken(scanner.AnyToken)
-	token := p.scanner.NextToken(scanner.AnyToken)
+	token := p.scanner.NextToken()
 	for { // outer loop over Si per input token xi
 		tracer().Debugf("Scanner read '%v|%d' @ %v", token, token.TokType(), token.Span())
 		x := inputSymbol{int(token.TokType()), token, token.Span()}
@@ -162,8 +161,7 @@ func (p *Parser) Parse(scan scanner.Tokenizer, listener Listener) (accept bool, 
 		if x.tokval == scanner.EOF {
 			break
 		}
-		//tokval, token, start, len = p.scanner.NextToken(scanner.AnyToken)
-		token = p.scanner.NextToken(scanner.AnyToken)
+		token = p.scanner.NextToken()
 	}
 	if accept = p.checkAccept(); accept && p.hasmode(optionGenerateTree) {
 		p.buildTree()
@@ -201,10 +199,8 @@ func (p *Parser) innerLoop(i uint64, x inputSymbol) {
 // Scanner:
 // If [A→…•a…, j] is in Si and a=xi+1, add [A→…a•…, j] to Si+1
 func (p *Parser) scan(S, S1 *iteratable.Set, item lr.Item, tokval int) {
-	//T().Debugf("Earley scan: tokval=%d", tokval)
 	if a := item.PeekSymbol(); a != nil {
 		if a.Value == tokval {
-			//T().Debugf("Earley: scan %s", item)
 			S1.Add(item.Advance())
 		}
 	}
@@ -221,9 +217,7 @@ func (p *Parser) predict(S, S1 *iteratable.Set, item lr.Item, i uint64) {
 		startitem.Origin = i
 		S.Add(startitem)
 	})
-	//T().Debugf("start items from B=%s: %v", B, itemSetString(startitemsForB))
 	if p.ga.DerivesEpsilon(B) { // B is nullable?
-		//T().Debugf("%s is nullable", B)
 		S.Add(item.Advance())
 	}
 }
@@ -233,23 +227,15 @@ func (p *Parser) predict(S, S1 *iteratable.Set, item lr.Item, i uint64) {
 func (p *Parser) complete(S, S1 *iteratable.Set, item lr.Item, i uint64) {
 	if item.PeekSymbol() == nil { // dot is behind RHS
 		A, j := item.Rule().LHS, item.Origin
-		//T().Debugf("Completing rule for %s: %s", A, item)
 		Sj := p.states[j]
-		//R := Sj.Copy()
-		//T().Debugf("   search predecessors: %s", itemSetString(R))
 		R := Sj.Copy().Subset(func(e interface{}) bool { // find all [B→…•A…, k]
 			jtem := e.(lr.Item)
-			// if jtem.PeekSymbol() == A {
-			// 	T().Debugf("    => %s", jtem)
-			// }
 			return jtem.PeekSymbol() == A
 		})
-		//T().Debugf("   found predecessors: %s", itemSetString(R))
 		R.Each(func(e interface{}) { // now add [B→…A•…, k]
 			jtem := e.(lr.Item)
 			if jadv := jtem.Advance(); jadv != lr.NullItem {
 				if jadv.PeekSymbol() == nil {
-					//T().Errorf("%v COMPLETED DUE TO %v", jadv, item)
 					// store this backlink for later parsetree generation
 					h := hash(jadv, i)
 					p.backlinks[h] = item
@@ -298,7 +284,7 @@ func (p *Parser) buildTree() error {
 		if root == nil {
 			return fmt.Errorf("returned parse forest is empty")
 		}
-		return fmt.Errorf("Expected root node of forest to be start symbol, is %v", root.Symbol())
+		return fmt.Errorf("expected root node of forest to be start symbol, is %v", root.Symbol())
 	}
 	p.forest = builder.Forest()
 	return nil
