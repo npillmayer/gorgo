@@ -1,4 +1,6 @@
-## TeREx: Term Rewriting Expressions
+<img alt="TeREx Logo" src="https://npillmayer.github.io/GoRGO/img/TeREx-Logo-bw.png" width="140" style="max-width:140">
+
+### Term Rewriting Expressions
 
 Parsing generates a parse tree, which is too verbose for further processing.
 Instead of long chains of grammar production symbols we usualy prefer a
