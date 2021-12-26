@@ -80,12 +80,20 @@ func TestSet1(t *testing.T) {
 	set2.Insert(2)
 	t.Logf("set 2 = %s of length %d", set2, set2.Len())
 	if set1.UnionWith(set2) {
-		t.Errorf("set 1 not expected to change, is now %s of length %d", set1, set1.Len())
+		t.Errorf("set 1 unexpectedly flagged as changed, is now %s of length %d", set1, set1.Len())
 	}
 	if set1.Equals(set3) {
 		t.Logf("however, set 1 is unchanged")
-		t.Logf("intsets.UnionWith() contains a bug")
+		t.Logf("⇒ intsets.UnionWith() contains a bug, does not check for x ⊂ s")
 	}
+	// code in sparse.go should look something like this:
+	// if sb.bits[i] != xb.bits[i] {
+	// 	w := sb.bits[i]
+	// 	sb.bits[i] |= xb.bits[i]
+	// 	if w != sb.bits[i] { // check for change; no change in case of x ⊂ s
+	// 		changed = true
+	// 	}
+	// }
 }
 
 func TestClosure2(t *testing.T) {

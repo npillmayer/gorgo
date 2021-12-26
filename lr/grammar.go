@@ -34,8 +34,9 @@ func (lrsym *Symbol) IsTerminal() bool {
 	return lrsym.Value > NonTermType
 }
 
-// Token is just an alias for lrsym.Value.
-func (lrsym *Symbol) Token() int {
+// TokenType is just an alias for lrsym.Value. For terminals, lrsym.Value holds the token
+// type/ID.
+func (lrsym *Symbol) TokenType() int {
 	return lrsym.Value
 }
 
@@ -258,7 +259,7 @@ func (g *Grammar) Dump() {
 		tracer().Debugf("N  %v = %d\n", A, A.Value)
 	}
 	for _, A := range g.terminals {
-		tracer().Debugf("T  %v = %d\n", A, A.Token())
+		tracer().Debugf("T  %v = %d\n", A, A.TokenType())
 	}
 	for _, r := range g.rules {
 		tracer().Debugf("%3d: %s\n", r.Serial, r.String())

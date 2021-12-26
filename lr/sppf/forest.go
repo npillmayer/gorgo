@@ -260,7 +260,7 @@ var o = [...]int64{107, 401, 353, 223, 811, 569, 619, 173, 433, 757, 811,
 	823, 857, 863, 883, 907, 929, 947, 971, 983}
 
 func rhsSignature(rhs []*SymbolNode, start uint64) int32 {
-	const largePrime = int64(143743)
+	const largePrime int64 = 143743
 	if len(rhs) == 0 { // ε
 		return int32(o[start%uint64(len(o))])
 	}
@@ -328,7 +328,9 @@ func (f *Forest) findOrEdge(sn *SymbolNode, rhs *rhsNode) orEdge {
 			e := el.(orEdge)
 			return e.fromSym == sn && e.toRHS == rhs
 		})
-		return v.(orEdge)
+		if v != nil {
+			return v.(orEdge)
+		}
 	}
 	return nullOrEdge
 }

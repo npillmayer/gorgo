@@ -385,8 +385,8 @@ func (lrgen *TableGenerator) BuildGotoTable() *sparse.IntMatrix {
 	statescnt := lrgen.dfa.states.Size()
 	maxtok := 0
 	lrgen.g.EachSymbol(func(A *Symbol) interface{} {
-		if A.Token() > maxtok { // find maximum token value
-			maxtok = A.Token()
+		if A.TokenType() > maxtok { // find maximum token value
+			maxtok = A.TokenType()
 		}
 		return nil
 	})
@@ -480,8 +480,8 @@ func (lrgen *TableGenerator) BuildSLR1ActionTable() (*sparse.IntMatrix, bool) {
 	statescnt := lrgen.dfa.states.Size()
 	maxtok := 0
 	lrgen.g.EachSymbol(func(A *Symbol) interface{} {
-		if A.Token() > maxtok { // find maximum token value
-			maxtok = A.Token()
+		if A.TokenType() > maxtok { // find maximum token value
+			maxtok = A.TokenType()
 		}
 		return nil
 	})
@@ -523,18 +523,18 @@ func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bo
 				P := pT(state, A)
 				tracer().Debugf("    creating action entry --%v--> %d", A, P)
 				if slr1 {
-					if a1 := actions.Value(state.ID, A.Token()); a1 != actions.NullValue() {
+					if a1 := actions.Value(state.ID, A.TokenType()); a1 != actions.NullValue() {
 						tracer().Debugf("    %s is 2nd action", valstring(int32(P), actions))
 						if a1 == ShiftAction {
 							tracer().Debugf("    relax, double shift")
 						} else {
 							hasConflicts = true
-							actions.Add(state.ID, A.Token(), int32(P))
+							actions.Add(state.ID, A.TokenType(), int32(P))
 						}
 					} else {
-						actions.Add(state.ID, A.Token(), int32(P))
+						actions.Add(state.ID, A.TokenType(), int32(P))
 					}
-					tracer().Debugf(actionEntry(state.ID, A.Token(), actions))
+					tracer().Debugf(actionEntry(state.ID, A.TokenType(), actions))
 				} else {
 					actions.Add(state.ID, 1, int32(P))
 				}
@@ -569,7 +569,7 @@ func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bo
 }
 
 func pT(state *CFSMState, terminal *Symbol) int {
-	if terminal.Token() == scanner.EOF {
+	if terminal.TokenType() == scanner.EOF {
 		return AcceptAction
 	}
 	return ShiftAction

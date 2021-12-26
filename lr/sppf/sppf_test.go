@@ -13,7 +13,7 @@ import (
 )
 
 func TestSignature(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G")
@@ -42,7 +42,7 @@ func TestSignature(t *testing.T) {
 }
 
 func TestSigma(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G")
@@ -53,8 +53,8 @@ func TestSigma(t *testing.T) {
 	rhs := []*SymbolNode{s1, s2}
 	t.Logf("rhs=%v", rhs)
 	sigma := rhsSignature(rhs, 0)
-	if sigma != 98854 {
-		t.Errorf("sigma expected to be 98854, is %d", sigma)
+	if sigma != 113896 {
+		t.Errorf("sigma expected to be 113896, is %d", sigma)
 	}
 }
 
@@ -62,7 +62,7 @@ func TestSigma(t *testing.T) {
 // S  ⟶ A
 // A  ⟶ a
 func TestSPPFInsert(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G")
@@ -89,7 +89,7 @@ func TestSPPFInsert(t *testing.T) {
 // A  ⟶ a
 // B  ⟶ a
 func TestSPPFAmbiguous(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G")
@@ -110,7 +110,7 @@ func TestSPPFAmbiguous(t *testing.T) {
 // S  ⟶ A
 // A  ⟶ a
 func TestTraverse(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G")

@@ -60,7 +60,8 @@ func TestAST1(t *testing.T) {
 	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
 	ab := NewASTBuilder(G)
 	env := ab.AST(parser.ParseForest(), earleyTokenReceiver(parser))
-	expected := `(:a :+ :a :#eof)`
+	//expected := `(:a :+ :a :#eof)`
+	expected := `(-2 43 -2 -1)`
 	if env == nil || env.AST == nil || env.AST.Cdr == nil {
 		t.Errorf("AST is empty")
 	} else {
@@ -92,7 +93,8 @@ func TestAST2(t *testing.T) {
 	builder := NewASTBuilder(G)
 	builder.AddTermR(makeOp("E"))
 	env := builder.AST(parser.ParseForest(), earleyTokenReceiver(parser))
-	expected := `((#E (#E :a) :+ :a) :#eof)`
+	//expected := `((#E (#E :a) :+ :a) :#eof)`
+	expected := `((#E (#E -2) 43 -2) -1)`
 	if env == nil || env.AST.Cdr == nil {
 		t.Errorf("AST is empty")
 	} else if env.AST.ListString() != expected {

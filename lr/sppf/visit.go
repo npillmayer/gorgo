@@ -248,7 +248,7 @@ func (c *Cursor) traverseTopDown(listener Listener, dir Direction, breakmode Bre
 	if sym := c.current.Symbol(); sym.IsTerminal() {
 		// TODO find position of token
 		ctxt := makeCtxt(c.current.symbol.Extent, level+1, -1, nil)
-		return listener.Terminal(sym.Value, sym.Token(), ctxt)
+		return listener.Terminal(sym.Value, sym.TokenType(), ctxt)
 	}
 	tracer().Debugf(">>> %s", c.current.symbol)
 	ruleno, rhsNodes := c.RHS(c.current.symbol)

@@ -84,8 +84,9 @@ func main() {
 	gtrace.SyntaxTracer = gologadapter.New()
 	tracing.RegisterTraceAdapter("go", gologadapter.GetAdapter(), false)
 	conf := testconfig.Conf{
-		"tracing.adapter": "go",
-		"trace.gorgo.lr":  "Info",
+		"tracing.adapter":   "go",
+		"trace.gorgo.lr":    "Info",
+		"trace.gorgo.terex": "Info",
 	}
 	if err := trace2go.ConfigureRoot(conf, "trace", trace2go.ReplaceTracers(true)); err != nil {
 		fmt.Printf("error configuring tracing")
