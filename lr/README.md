@@ -10,7 +10,7 @@ Table-driven parser for simple grammars, using the SLR parsing technique.
 
 Package `glr` contains an experimental parser which—hopefully—we will use some day to parse Markdown. GLR parsers are rare (outside of academic research) and there is no easy-to-port version in another programming language. We will just muddle ahead and will see where we can get.
 
-GLR parsers rely on a special stack structure, called a GSS. A GSS can hold information about alternative parser states after a conflict (shift/reduce, reduce/reduce) occured. 
+GLR parsers rely on a special stack structure, called a GSS (see package `gss`). A GSS can hold information about alternative parser states after a conflict (shift/reduce, reduce/reduce) occured. 
 
 For further information see for example
 
@@ -21,4 +21,4 @@ This is experimental software, currently not intended for production use in any 
 
 ### Earley-Parser
 
-Earley parsing is a parsing technique known for quite some time, but due to its potentially O(n3) runtime-complexity has never gained track with parser generator. However, for real-life DSLs runtime usually is very acceptable. Eerley-parsers are very convenient to handle, and recently there are a couple of implementations around.
+Earley parsing is a parsing technique known for quite some time, but due to its potentially O(n3) runtime-complexity has never gained track with parser generator. However, for real-life DSLs runtime usually is very acceptable. Earley-parsers are very convenient to handle, and recently there are a couple of implementations around.
