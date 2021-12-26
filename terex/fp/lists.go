@@ -12,7 +12,6 @@ Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 
 import (
 	"github.com/npillmayer/gorgo/terex"
-	"github.com/npillmayer/schuko/gtrace"
 )
 
 /*
@@ -310,7 +309,7 @@ func TreeDepthFirstCh(l *terex.GCons) <-chan TreeNode {
 				root = right        // root <- right child
 			} else {
 				// b) Else print root's data and set root as NULL.
-				gtrace.SyntaxTracer.Debugf("Node=%s, parent=%s", root, t.tos())
+				tracer().Debugf("Node=%s, parent=%s", root, t.tos())
 				channel <- node(root, t.tos())
 				root = nil
 			}
@@ -368,7 +367,7 @@ func children(node *terex.GCons) (*terex.GCons, *terex.GCons) {
 
 func (t treeTraverser) printStack() {
 	for i, n := range t {
-		gtrace.SyntaxTracer.Debugf("   [%d] %s", i, terex.Elem(n).String())
+		tracer().Debugf("   [%d] %s", i, terex.Elem(n).String())
 	}
 }
 
@@ -450,7 +449,7 @@ type NodeMapper func(node TreeNode) TreeNode
 // Print prints a node to the syntax tracer and returns the input node.
 func Print() NodeMapper {
 	return func(node TreeNode) TreeNode {
-		gtrace.SyntaxTracer.Debugf("tree node = %s", node)
+		tracer().Debugf("tree node = %s", node)
 		return node
 	}
 }

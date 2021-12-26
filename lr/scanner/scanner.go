@@ -20,7 +20,6 @@ import (
 	"text/scanner"
 
 	"github.com/npillmayer/gorgo"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 )
 
@@ -89,7 +88,7 @@ func (t *DefaultTokenizer) SetErrorHandler(h func(error)) {
 func (t *DefaultTokenizer) NextToken() gorgo.Token {
 	t.lastToken = t.Scan()
 	if t.lastToken == scanner.EOF {
-		gtrace.SyntaxTracer.Debugf("DefaultTokenizer reached end of input")
+		tracer().Debugf("DefaultTokenizer reached end of input")
 	}
 	if t.unifyStrings &&
 		(t.lastToken == scanner.RawString || t.lastToken == scanner.Char) {

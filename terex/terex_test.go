@@ -56,7 +56,7 @@ func TestList2(t *testing.T) {
 }
 
 func TestFirst(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	l := List(1, 2, 3, 4, 5)
@@ -77,7 +77,7 @@ func TestFirst(t *testing.T) {
 }
 
 func TestNth(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	l := List(1, 2, 3, 4, 5)
@@ -88,7 +88,7 @@ func TestNth(t *testing.T) {
 }
 
 func TestDrop(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	l := List(1, 2, 3, 4, 5)
@@ -102,7 +102,7 @@ func TestDrop(t *testing.T) {
 }
 
 func TestMatch1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	l1 := List("a", 1, 2)
@@ -127,7 +127,7 @@ func TestMatch1(t *testing.T) {
 }
 
 func TestMatch2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	S := GlobalEnvironment.Intern("S", false)
@@ -144,7 +144,7 @@ func TestMatch2(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	l2 := List("+", 5, 7, 12)
@@ -162,7 +162,7 @@ func TestString(t *testing.T) {
 }
 
 func TestListAPI(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	l := List(1, 2, 3)
@@ -172,7 +172,7 @@ func TestListAPI(t *testing.T) {
 }
 
 func TestNilElement(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	n := Elem(nil)
@@ -180,35 +180,6 @@ func TestNilElement(t *testing.T) {
 		t.Errorf("nil-element expected to be recognized with isNil()")
 	}
 }
-
-/*
-func TestMap(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	l := List(1, 2, 3)
-	r := l.Map(_Inc)
-	t.Logf("inc('%s) = %s", l.ListString(), r.ListString())
-	if r.Car.Data != 2.0 {
-		t.Errorf("Expected first element of r to be 2, is %g", r.Car.Data)
-	}
-}
-*/
-
-/* func TestEvalAdd(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	InitGlobalEnvironment()
-	add := GlobalEnvironment.FindSymbol("+", false).Value
-	l := List(add, 1, 2)
-	r := GlobalEnvironment.Eval(l)
-	if r == nil {
-		t.Errorf("Call to _Add failed")
-	}
-} */
 
 // ---------------------------------------------------------------------------
 

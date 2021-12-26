@@ -10,37 +10,12 @@ import (
 	"github.com/npillmayer/gorgo/lr/scanner"
 	"github.com/npillmayer/gorgo/lr/sppf"
 	"github.com/npillmayer/gorgo/terex"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 )
 
-/* func TestEnvSym(t *testing.T) {
-	gtrace.SyntaxTracer = gotestingadapter.New()
-	teardown := gotestingadapter.RedirectTracing(t)
-	defer teardown()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
-	b := lr.NewGrammarBuilder("TermR")
-	b.LHS("E").N("E").T("+", '+').T("var", scanner.Ident).End()
-	b.LHS("E").T("var", scanner.Ident).End()
-	G, _ := b.Grammar()
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
-	ab := NewASTBuilder(G)
-	//env, err := EnvironmentForGrammarSymbol("E", G)
-	rhs := G.Rule(0).RHS()
-	env, err := ab.EnvironmentForGrammarRule("E", rhs)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	t.Logf(env.Dump())
-	t.Logf(terex.GlobalEnvironment.Dump())
-	if env.FindSymbol("E", true) == nil {
-		t.Errorf("Expected to have symbol E in environment")
-	}
-} */
-
 func TestAST1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("TermR")
@@ -57,7 +32,7 @@ func TestAST1(t *testing.T) {
 	}
 	// tmpfile, _ := ioutil.TempFile(".", "tree-*.dot")
 	// sppf.ToGraphViz(parser.ParseForest(), tmpfile)
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracing.Select("gorgo.terex").SetTraceLevel(tracing.LevelDebug)
 	ab := NewASTBuilder(G)
 	env := ab.AST(parser.ParseForest(), earleyTokenReceiver(parser))
 	//expected := `(:a :+ :a :#eof)`
@@ -72,7 +47,7 @@ func TestAST1(t *testing.T) {
 }
 
 func TestAST2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("TermR")
@@ -89,7 +64,7 @@ func TestAST2(t *testing.T) {
 	}
 	// tmpfile, _ := ioutil.TempFile(".", "tree-*.dot")
 	// sppf.ToGraphViz(parser.ParseForest(), tmpfile)
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracing.Select("gorgo.terex").SetTraceLevel(tracing.LevelDebug)
 	builder := NewASTBuilder(G)
 	builder.AddTermR(makeOp("E"))
 	env := builder.AST(parser.ParseForest(), earleyTokenReceiver(parser))

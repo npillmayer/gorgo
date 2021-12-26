@@ -8,7 +8,7 @@ import (
 )
 
 func TestSet1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	set := ruleset{}
@@ -18,7 +18,7 @@ func TestSet1(t *testing.T) {
 }
 
 func TestSet2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G") // build a grammar of 3 rules

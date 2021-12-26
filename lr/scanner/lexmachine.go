@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/npillmayer/gorgo"
-	"github.com/npillmayer/schuko/gtrace"
 
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
@@ -34,7 +33,7 @@ func NewLMAdapter(init func(*lexmachine.Lexer), literals []string, keywords []st
 		adapter.Lexer.Add([]byte(strings.ToLower(name)), MakeToken(name, tokenIds[name]))
 	}
 	if err := adapter.Lexer.Compile(); err != nil {
-		gtrace.SyntaxTracer.Errorf("Error compiling DFA: %v", err)
+		tracer().Errorf("Error compiling DFA: %v", err)
 		return nil, err
 	}
 	return adapter, nil

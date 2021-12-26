@@ -15,7 +15,6 @@ import (
 	"github.com/npillmayer/gorgo/terex/terexlang"
 	"github.com/pterm/pterm"
 
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/schukonf/testconfig"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gologadapter"
@@ -81,7 +80,6 @@ func makeExprGrammar() *lr.LRAnalysis {
 func main() {
 	// set up logging
 	initDisplay()
-	gtrace.SyntaxTracer = gologadapter.New()
 	tracing.RegisterTraceAdapter("go", gologadapter.GetAdapter(), false)
 	conf := testconfig.Conf{
 		"tracing.adapter":   "go",

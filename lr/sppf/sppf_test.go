@@ -5,7 +5,6 @@ import (
 	"testing"
 	"text/scanner"
 
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 
@@ -72,7 +71,7 @@ func TestSPPFInsert(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	g.Dump()
 	f := NewForest()
 	a := f.AddTerminal(r2.RHS()[0], 0)
@@ -101,7 +100,7 @@ func TestSPPFAmbiguous(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	g.Dump()
 	//f := NewForest()
 }
@@ -120,7 +119,7 @@ func TestTraverse(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	G.Dump()
 	f := NewForest()
 	a := f.AddTerminal(r2.RHS()[0], 0)

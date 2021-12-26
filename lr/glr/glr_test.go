@@ -9,7 +9,6 @@ import (
 	"text/scanner"
 
 	"github.com/npillmayer/gorgo/lr"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 )
@@ -24,8 +23,7 @@ http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=A6FB43374BBE6D3041EF573
   4: B  ::= [a -]
 */
 func TestGLR1(t *testing.T) {
-	//gtrace.SyntaxTracer = gologadapter.New()
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G1")
@@ -43,14 +41,14 @@ func TestGLR1(t *testing.T) {
 // ----------------------------------------------------------------------
 
 func parse(t *testing.T, g *lr.Grammar, doDump bool, input ...string) bool {
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelInfo)
+	tracer().SetTraceLevel(tracing.LevelInfo)
 	ga := lr.Analysis(g)
 	lrgen := lr.NewTableGenerator(ga)
 	lrgen.CreateTables()
 	if lrgen.HasConflicts {
 		t.Logf("Grammar %s has conflicts", g.Name)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	if doDump {
 		dump(t, g, lrgen)
 	}

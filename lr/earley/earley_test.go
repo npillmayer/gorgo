@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/npillmayer/gorgo"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 
@@ -74,7 +73,7 @@ func TestParser1(t *testing.T) {
 	for n, input := range inputStrings {
 		tracer().Infof("=== '%s' ========================", input)
 		parser, scanner := makeParser(t, "Parser1", input)
-		gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+		tracer().SetTraceLevel(tracing.LevelDebug)
 		accept, err := parser.Parse(scanner, nil)
 		if err != nil {
 			t.Error(err)
@@ -99,7 +98,7 @@ func TestTree1(t *testing.T) {
 	if !accept {
 		t.Errorf("Valid input string not accepted: '%s'", input)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelError)
+	tracer().SetTraceLevel(tracing.LevelError)
 	v := parser.WalkDerivation(NewExprListener(t))
 	value, ok := v.Value.(int)
 	if !ok || value != 7 {
@@ -121,7 +120,7 @@ func TestSPPF1(t *testing.T) {
 	if !accept {
 		t.Errorf("Valid input string not accepted: '%s'", input)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	walker := NewTreeBuilder(parser.ga.Grammar())
 	root := parser.WalkDerivation(walker)
 	_, ok := root.Value.(*sppf.SymbolNode)
@@ -155,7 +154,7 @@ func TestAmbiguity1(t *testing.T) {
 	reader := strings.NewReader(input)
 	sc := scanner.GoTokenizer(fmt.Sprintf("test '%s'", input), reader)
 	parser := NewParser(ga)
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	accept, err := parser.Parse(sc, nil)
 	if err != nil {
 		t.Error(err)
@@ -163,7 +162,7 @@ func TestAmbiguity1(t *testing.T) {
 	if !accept {
 		t.Errorf("Valid input string not accepted: '%s'", input)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	walker := NewTreeBuilder(parser.ga.Grammar())
 	root := parser.WalkDerivation(walker)
 	if root == nil || root.Value == nil {

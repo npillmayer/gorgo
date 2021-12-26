@@ -99,7 +99,7 @@ func TestListSeq(t *testing.T) {
 }
 
 func TestTreeTraverse1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	tree := makeTree()
@@ -115,7 +115,7 @@ func TestTreeTraverse1(t *testing.T) {
 }
 
 func TestTreeTraverse2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	tree := makeTree()
@@ -128,7 +128,7 @@ func TestTreeTraverse2(t *testing.T) {
 }
 
 func TestTreeTraverse3(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	tree := makeTree()
@@ -141,7 +141,7 @@ func TestTreeTraverse3(t *testing.T) {
 }
 
 func TestTreeRange(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	tree := makeTree()
@@ -157,7 +157,7 @@ func TestTreeRange(t *testing.T) {
 }
 
 func TestTreeFilter(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.terex")
 	defer teardown()
 	//
 	tree := makeTree()

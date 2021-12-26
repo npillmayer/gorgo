@@ -9,13 +9,12 @@ import (
 
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/scanner"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 )
 
 func TestSLR1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G1")
@@ -28,7 +27,7 @@ func TestSLR1(t *testing.T) {
 }
 
 func TestSLR2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G2")
@@ -42,7 +41,7 @@ func TestSLR2(t *testing.T) {
 }
 
 func TestSLR3(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := lr.NewGrammarBuilder("G3")
@@ -60,14 +59,14 @@ func TestSLR3(t *testing.T) {
 // ----------------------------------------------------------------------
 
 func parse(t *testing.T, g *lr.Grammar, doDump bool, input ...string) bool {
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	ga := lr.Analysis(g)
 	lrgen := lr.NewTableGenerator(ga)
 	lrgen.CreateTables()
 	if lrgen.HasConflicts {
 		t.Errorf("Grammar %s has conflicts", g.Name)
 	}
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	if doDump {
 		dump(t, g, lrgen)
 	}

@@ -7,7 +7,6 @@ import (
 	"text/scanner"
 
 	"github.com/npillmayer/gorgo/lr/iteratable"
-	"github.com/npillmayer/schuko/gtrace"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 	"golang.org/x/tools/container/intsets"
@@ -16,7 +15,7 @@ import (
 var graphviz bool
 
 func TestBuilder1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -32,7 +31,7 @@ func TestBuilder1(t *testing.T) {
 }
 
 func TestBuilder2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -44,7 +43,7 @@ func TestBuilder2(t *testing.T) {
 }
 
 func TestClosure1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -65,7 +64,7 @@ func TestClosure1(t *testing.T) {
 }
 
 func TestSet1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	set1 := &intsets.Sparse{}
@@ -97,7 +96,7 @@ func TestSet1(t *testing.T) {
 }
 
 func TestClosure2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -108,7 +107,7 @@ func TestClosure2(t *testing.T) {
 	g, _ := b.Grammar()
 	g.Dump()
 	ga := Analysis(g)
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	closure0 := ga.closure(StartItem(g.Rule(0)))
 	if closure0.Size() != 5 {
 		Dump(closure0)
@@ -125,7 +124,7 @@ func TestClosure2(t *testing.T) {
 }
 
 func TestItemSetEquality(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -144,7 +143,7 @@ func TestItemSetEquality(t *testing.T) {
 }
 
 func TestClosure4(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -161,7 +160,7 @@ func TestClosure4(t *testing.T) {
 }
 
 func TestStateRetrieval(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -181,7 +180,7 @@ func TestStateRetrieval(t *testing.T) {
 }
 
 func TestBuildCFSM(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -196,7 +195,7 @@ func TestBuildCFSM(t *testing.T) {
 }
 
 func TestDerivesEps(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -222,7 +221,7 @@ func TestDerivesEps(t *testing.T) {
 }
 
 func TestFirstSet(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -242,7 +241,7 @@ func TestFirstSet(t *testing.T) {
 }
 
 func TestFollowSet(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -282,7 +281,7 @@ func TestFollowSet(t *testing.T) {
 }
 
 func TestGotoTable(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -304,7 +303,7 @@ func TestGotoTable(t *testing.T) {
 }
 
 func TestActionTable(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G")
@@ -334,7 +333,7 @@ func TestActionTable(t *testing.T) {
 // }
 
 func TestCraftingG2(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G2")
@@ -356,7 +355,7 @@ func TestCraftingG2(t *testing.T) {
 }
 
 func TestTerminals1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G6")
@@ -379,7 +378,7 @@ func TestTerminals1(t *testing.T) {
 }
 
 func TestExercise1(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("E6")
@@ -404,7 +403,7 @@ func TestExercise1(t *testing.T) {
 		}
 	}
 	lrgen := NewTableGenerator(ga)
-	gtrace.SyntaxTracer.SetTraceLevel(tracing.LevelDebug)
+	tracer().SetTraceLevel(tracing.LevelDebug)
 	lrgen.CreateTables()
 	// tmpfile, err := ioutil.TempFile(".", "E6_*.html")
 	// if err != nil {
@@ -418,7 +417,7 @@ func TestExercise1(t *testing.T) {
 }
 
 func TestGrammar7(t *testing.T) {
-	teardown := gotestingadapter.QuickConfig(t, "tyse.fonts")
+	teardown := gotestingadapter.QuickConfig(t, "gorgo.lr")
 	defer teardown()
 	//
 	b := NewGrammarBuilder("G7")

@@ -14,6 +14,13 @@ Copyright © 2017–2021 Norbert Pillmayer <norbert@pillmayer.com>
 */
 package fp
 
+import "github.com/npillmayer/schuko/tracing"
+
+// tracer traces with key 'gorgo.terex'.
+func tracer() tracing.Trace {
+	return tracing.Select("gorgo.terex")
+}
+
 /*
 Note:
 =====
