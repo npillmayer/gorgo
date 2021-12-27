@@ -1,4 +1,4 @@
-<img alt="GoRGO Logo" src="http://npillmayer.github.io/GorGO/img/GoRGO-Logo-bw.png" width="150" style="max-width:150">
+<img alt="GoRGO Logo" src="http://npillmayer.github.io/GoRGO/img/GoRGO-Logo-bw.png" width="150" style="max-width:150">
 
 #### A Parsing Toolbox
 
