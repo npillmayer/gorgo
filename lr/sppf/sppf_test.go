@@ -5,6 +5,7 @@ import (
 	"testing"
 	"text/scanner"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/schuko/tracing"
 	"github.com/npillmayer/schuko/tracing/gotestingadapter"
 
@@ -168,11 +169,11 @@ func (l *L) ExitRule(sym *lr.Symbol, rhs []*RuleNode, ctxt RuleCtxt) interface{}
 	return nil
 }
 
-func (l *L) Terminal(tokval int, token interface{}, ctxt RuleCtxt) interface{} {
-	tok := l.G.Terminal(tokval)
-	l.a = tok
-	l.t.Logf("  terminal=%s", tok.Name)
-	return tok
+func (l *L) Terminal(tokval gorgo.TokType, terminal *lr.Symbol, ctxt RuleCtxt) interface{} {
+	//tok := l.G.Terminal(tokval)
+	l.a = terminal
+	l.t.Logf("  terminal=%s", terminal.Name)
+	return terminal
 }
 
 func (l *L) Conflict(sym *lr.Symbol, ctxt RuleCtxt) (int, error) {

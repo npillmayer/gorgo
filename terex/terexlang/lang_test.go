@@ -34,11 +34,11 @@ func TestScanner(t *testing.T) {
 }
 
 func TestAssignability(t *testing.T) {
-	var e interface{} = &sExprTermR{name: "Hello"}
+	var e interface{} = &sExprRewriter{name: "Hello"}
 	switch x := e.(type) {
-	case termr.TermR:
+	case termr.TermRewriter:
 		t.Logf("sExprTermR %v accepted as termr.TermR", x)
-		switch o := x.Operator().(type) {
+		switch o := x.OperatorFor("Hello").(type) {
 		case terex.Operator:
 			t.Logf("sExprTermR.Operator() %v accepted as terex.Operator", o)
 		default:
@@ -131,7 +131,6 @@ func TestQuoteAST(t *testing.T) {
 	}
 	//t.Logf("\n\n" + debugString(q))
 	q.Dump(tracing.LevelInfo)
-	//t.Fail()
 }
 
 func debugString(e terex.Element) string {

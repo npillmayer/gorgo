@@ -36,7 +36,7 @@ func TestAST1(t *testing.T) {
 	ab := NewASTBuilder(G)
 	env := ab.AST(parser.ParseForest(), earleyTokenReceiver(parser))
 	//expected := `(:a :+ :a :#eof)`
-	expected := `(-2 43 -2 -1)`
+	expected := `(:t(-2) :t(43) :t(-2) :t(-1))`
 	if env == nil || env.AST == nil || env.AST.Cdr == nil {
 		t.Errorf("AST is empty")
 	} else {
@@ -66,10 +66,10 @@ func TestAST2(t *testing.T) {
 	// sppf.ToGraphViz(parser.ParseForest(), tmpfile)
 	tracing.Select("gorgo.terex").SetTraceLevel(tracing.LevelDebug)
 	builder := NewASTBuilder(G)
-	builder.AddTermR(makeOp("E"))
+	builder.AddRewriter("E", makeOp("E"))
 	env := builder.AST(parser.ParseForest(), earleyTokenReceiver(parser))
 	//expected := `((#E (#E :a) :+ :a) :#eof)`
-	expected := `((#E (#E -2) 43 -2) -1)`
+	expected := `((#E (#E :t(-2)) :t(43) :t(-2)) :t(-1))`
 	if env == nil || env.AST.Cdr == nil {
 		t.Errorf("AST is empty")
 	} else if env.AST.ListString() != expected {
@@ -106,7 +106,7 @@ func (op *testOp) String() string {
 	return op.name
 }
 
-func (op *testOp) Operator() terex.Operator {
+func (op *testOp) OperatorFor(gsym string) terex.Operator {
 	return op
 }
 
@@ -114,9 +114,9 @@ func (op *testOp) Call(el terex.Element, env *terex.Environment) terex.Element {
 	return terex.Elem(nil)
 }
 
-func (op *testOp) Quote(el terex.Element, env *terex.Environment) terex.Element {
-	return el
-}
+// func (op *testOp) Quote(el terex.Element, env *terex.Environment) terex.Element {
+// 	return el
+// }
 
 func makeOp(name string) *testOp {
 	return &testOp{

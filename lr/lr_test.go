@@ -84,6 +84,7 @@ func TestSet1(t *testing.T) {
 	if set1.Equals(set3) {
 		t.Logf("however, set 1 is unchanged")
 		t.Logf("⇒ intsets.UnionWith() contains a bug, does not check for x ⊂ s")
+		t.Logf("  fixed with my bug report #50352 on Dec 27 2021")
 	}
 	// code in sparse.go should look something like this:
 	// if sb.bits[i] != xb.bits[i] {

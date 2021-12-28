@@ -26,14 +26,14 @@ import (
 // ambiguous grammars, the parse tree may happen to be a parse forest, containing
 // more than one derivation for a sentence.
 type ASTBuilder struct {
-	G                *lr.Grammar          // input grammar the parse forest stems from
-	Env              *terex.Environment   // environment for symbols of the AST to create
-	forest           *sppf.Forest         // input parse tree/forest
-	conflictStrategy sppf.Pruner          // how to deal with parse-forest ambiguities
-	toks             gorgo.TokenRetriever // retriever for parse tree leafs
-	rewriters        map[string]TermR     // term rewriters to apply
-	Error            func(error)          // user supplied handler for errors
-	stack            []*terex.GCons       // used for recursive operator walking
+	G                *lr.Grammar             // input grammar the parse forest stems from
+	Env              *terex.Environment      // environment for symbols of the AST to create
+	forest           *sppf.Forest            // input parse tree/forest
+	conflictStrategy sppf.Pruner             // how to deal with parse-forest ambiguities
+	toks             gorgo.TokenRetriever    // retriever for parse tree leafs
+	rewriters        map[string]TermRewriter // term rewriters to apply
+	Error            func(error)             // user supplied handler for errors
+	stack            []*terex.GCons          // used for recursive operator walking
 }
 
 // ErrorHandler is an interface to process errors occuring during parsing.
@@ -55,24 +55,23 @@ func NewASTBuilder(g *lr.Grammar) *ASTBuilder {
 		G:         g,
 		Env:       terex.NewEnvironment("AST "+g.Name, terex.GlobalEnvironment),
 		stack:     make([]*terex.GCons, 0, 256),
-		rewriters: make(map[string]TermR),
+		rewriters: make(map[string]TermRewriter),
 	}
 	return ab
 }
 
-// TermR is a type for a rewriter for AST creation and transformation.
-type TermR interface {
-	String() string                                         // printable name
+// TermRewriter is a type for a rewriter for AST creation and transformation.
+type TermRewriter interface {
 	Rewrite(*terex.GCons, *terex.Environment) terex.Element // term rewriting
 	Descend(sppf.RuleCtxt) bool                             // predicate wether to descend to children nodes
-	Operator() terex.Operator                               // operator to place as sub-tree node
+	OperatorFor(string) terex.Operator                      // operator (for symbol) to place as sub-tree node
 }
 
-// AddTermR adds an AST rewriter for a non-terminal grammar symbol to the builder.
-func (ab *ASTBuilder) AddTermR(trew TermR) {
+// AddRewriter adds an AST rewriter for a non-terminal grammar symbol to the builder.
+func (ab *ASTBuilder) AddRewriter(grammarSymbol string, trew TermRewriter) {
 	if trew != nil {
-		tracer().Infof("Adding term rewriter for symbol %s", trew.String())
-		ab.rewriters[trew.String()] = trew
+		tracer().Infof("Adding term rewriter for symbol %s", grammarSymbol)
+		ab.rewriters[grammarSymbol] = trew
 	}
 }
 
@@ -106,7 +105,8 @@ func (ab *ASTBuilder) EnterRule(sym *lr.Symbol, rhs []*sppf.RuleNode, ctxt sppf.
 			return false
 		}
 		tracer().Debugf("-------> enter operator symbol: %v", sym)
-		opSymListStart := terex.Cons(terex.Atomize(rew.Operator()), nil)
+		op := rew.OperatorFor(sym.Name)
+		opSymListStart := terex.Cons(terex.Atomize(op), nil)
 		ab.stack = append(ab.stack, opSymListStart) // put '(op ... ' on stack
 	} else {
 		tracer().Debugf("-------> enter grammar symbol: %v", sym)
@@ -213,13 +213,13 @@ func appendRHSResult(list *terex.GCons, r *sppf.RuleNode) *terex.GCons {
 
 // Terminal is part of sppf.Listener interface.
 // Not intended for direct client use.
-func (ab *ASTBuilder) Terminal(tokval int, token interface{}, ctxt sppf.RuleCtxt) interface{} {
+func (ab *ASTBuilder) Terminal(tokval gorgo.TokType, terminal *lr.Symbol, ctxt sppf.RuleCtxt) interface{} {
 	// T().Errorf("TERMINAL TOKEN FOR %d ------------------", tokval)
 	// T().Errorf("SPAN = %d", ctxt.Span.Len())
 	if ctxt.Span.Len() == 0 { // RHS is epsilon
 		return terex.Elem(nil)
 	}
-	terminal := ab.G.Terminal(tokval)
+	//terminal := ab.G.Terminal(tokval)
 	tokpos := ctxt.Span.From()
 	t := ab.toks(tokpos) // opaque token type
 	//atom := terex.Atomize(&terex.Token{Name: terminal.Name, TokType: tokval, Token: t})
@@ -231,20 +231,8 @@ func (ab *ASTBuilder) Terminal(tokval int, token interface{}, ctxt sppf.RuleCtxt
 		}
 	}
 	//atom := terex.Atomize(&terex.Token{Name: terminal.Name, Token: t})
-	atom := terex.Atomize(token)
-	if t != nil {
-		s := t.Lexeme()
-		// if tt, ok := t.(*lexmachine.Token); ok {
-		// 	s = string(tt.Lexeme)
-		// } else if tt, ok := t.(fmt.Stringer); ok {
-		// 	s = tt.String()
-		// } else {
-		// 	s = t.(string)
-		// }
-		tracer().Debugf("CONS(terminal=%s) = %v @%d [%s]", terminal.Name, atom, tokpos, s)
-	} else {
-		tracer().Debugf("CONS(terminal=%s) = %v @%d", terminal.Name, atom, tokpos)
-	}
+	atom := terex.Atomize(t)
+	tracer().Debugf("CONS(terminal=%s) = %v @%d", terminal.Name, atom, tokpos)
 	return terex.Elem(atom)
 }
 
@@ -359,45 +347,8 @@ func setSymbolValue(envsym *terex.Symbol, r *sppf.RuleNode) {
 	// }
 }
 
-/*
-func appendAtom(cons *terex.GCons, atom terex.Atom) *terex.GCons {
-	if atom == terex.NilAtom {
-		return cons
-	}
-	if cons == nil {
-		return terex.Cons(atom, nil)
-	}
-	cons.Cdr = terex.Cons(atom, nil)
-	return cons.Cdr
-}
-
-func appendList(cons *terex.GCons, list *terex.GCons) (*terex.GCons, *terex.GCons) {
-	start := cons
-	if cons == nil {
-		cons = list
-		start = list
-	} else {
-		cons.Cdr = list
-	}
-	for cons.Cdr != nil {
-		cons = cons.Cdr
-	}
-	//T().Debugf("appendList: new list is %s", start.ListString())
-	return start, cons
-}
-
-func appendTee(cons *terex.GCons, list *terex.GCons) *terex.GCons {
-	tee := terex.Cons(terex.Atomize(list), nil)
-	if cons == nil {
-		cons = tee
-	} else {
-		cons.Cdr = tee
-	}
-	return tee
-}
-*/
-
 // ersatzToken is a very unsophisticated token type used for terminal tokens.
+// It is used in case the caller is unable to provide the initially read input token.
 type ersatzToken struct {
 	kind   gorgo.TokType
 	lexeme string

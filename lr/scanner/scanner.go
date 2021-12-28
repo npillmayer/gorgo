@@ -94,7 +94,7 @@ func (t *DefaultTokenizer) NextToken() gorgo.Token {
 		(t.lastToken == scanner.RawString || t.lastToken == scanner.Char) {
 		t.lastToken = scanner.String
 	}
-	return defaultToken{
+	return DefaultToken{
 		kind:   gorgo.TokType(t.lastToken),
 		lexeme: t.TokenText(),
 		span:   gorgo.Span{uint64(t.Position.Offset), uint64(t.Pos().Offset)},
@@ -103,28 +103,28 @@ func (t *DefaultTokenizer) NextToken() gorgo.Token {
 
 // --- Default tokens --------------------------------------------------------
 
-// defaultToken is a very unsophisticated token type, used as default for the Go
+// DefaultToken is a very unsophisticated token type, used as default for the Go
 // tokenizer as well as the LexMachine scanner.
-type defaultToken struct {
+type DefaultToken struct {
 	kind   gorgo.TokType
 	lexeme string
-	value  interface{}
+	Val    interface{}
 	span   gorgo.Span
 }
 
-func (t defaultToken) TokType() gorgo.TokType {
+func (t DefaultToken) TokType() gorgo.TokType {
 	return t.kind
 }
 
-func (t defaultToken) Value() interface{} {
-	return t.value
+func (t DefaultToken) Value() interface{} {
+	return t.Val
 }
 
-func (t defaultToken) Lexeme() string {
+func (t DefaultToken) Lexeme() string {
 	return t.lexeme
 }
 
-func (t defaultToken) Span() gorgo.Span {
+func (t DefaultToken) Span() gorgo.Span {
 	return t.span
 }
 

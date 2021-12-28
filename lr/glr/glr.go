@@ -49,9 +49,9 @@ import (
 	"io"
 	"text/scanner"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/dss"
-	"github.com/npillmayer/gorgo/lr/sparse"
 	"github.com/npillmayer/schuko/tracing"
 )
 
@@ -63,17 +63,17 @@ func tracer() tracing.Trace {
 // A Parser type for GLR parsing.
 // Create and initialize one with glr.NewParser(...)
 type Parser struct {
-	G       *lr.Grammar       // grammar to use; do not alter after initialization
-	dss     *dss.Root         // DSS stack, i.e. multiple parse stacks
-	gotoT   *sparse.IntMatrix // GOTO table
-	actionT *sparse.IntMatrix // ACTION table
+	G       *lr.Grammar // grammar to use; do not alter after initialization
+	dss     *dss.Root   // DSS stack, i.e. multiple parse stacks
+	gotoT   *lr.Table   // GOTO table
+	actionT *lr.Table   // ACTION table
 	//accepting []int             // slice of accepting states
 }
 
 // NewParser creates and initializes a parser object, given information from an
 // lr.LRTableGenerator. Clients have to provide a link to the grammar and the
 // parser tables.
-func NewParser(g *lr.Grammar, gotoTable *sparse.IntMatrix, actionTable *sparse.IntMatrix) *Parser {
+func NewParser(g *lr.Grammar, gotoTable *lr.Table, actionTable *lr.Table) *Parser {
 	parser := &Parser{
 		G:       g,
 		gotoT:   gotoTable,
@@ -117,9 +117,9 @@ func (p *Parser) Parse(S *lr.CFSMState, scan Scanner) (bool, error) {
 		tracer().Errorf("GLR parser not initialized")
 		return false, fmt.Errorf("GLR parser not initialized")
 	}
-	p.dss = dss.NewRoot("G", -1)  // drops existing stacks for new run
-	start := dss.NewStack(p.dss)  // create first stack instance in DSS
-	start.Push(S.ID, p.G.Epsilon) // push the start state onto the stack
+	p.dss = dss.NewRoot("G", -1)       // drops existing stacks for new run
+	start := dss.NewStack(p.dss)       // create first stack instance in DSS
+	start.Push(int(S.ID), p.G.Epsilon) // push the start state onto the stack
 	accepting := false
 	done := false
 	tokval, token := scan.NextToken(nil)
@@ -165,7 +165,7 @@ func (p *Parser) reducesAndShiftsForToken(stack *dss.Stack, tokval int) bool {
 		heads[0] = R.get()
 		stateID, sym := heads[0].Peek()
 		tracer().P("dss", "TOS").Debugf("state = %d, symbol = %v", stateID, sym)
-		actions[0], actions[1] = p.actionT.Values(stateID, tokval)
+		actions[0], actions[1] = p.actionT.Values(uint(stateID), gorgo.TokType(tokval))
 		if actions[0] == lr.AcceptAction {
 			accepting = true
 		}
@@ -201,7 +201,7 @@ func (p *Parser) reducesAndShiftsForToken(stack *dss.Stack, tokval int) bool {
 }
 
 func (p *Parser) shift(stateID int, tokval int, stack *dss.Stack) []*dss.Stack {
-	nextstate := p.gotoT.Value(stateID, tokval)
+	nextstate := p.gotoT.Value(uint(stateID), gorgo.TokType(tokval))
 	tracer().Infof("shifting %v to %d", tokenString(tokval), nextstate)
 	terminal := p.G.Terminal(tokval)
 	head := stack.Push(int(nextstate), terminal)
@@ -218,7 +218,7 @@ func (p *Parser) reduce(stateID int, rule *lr.Rule, stack *dss.Stack) []*dss.Sta
 		for i, head := range heads {
 			state, _ := head.Peek()
 			tracer().Debugf("state on stack#%d is %d", i, state)
-			nextstate := p.gotoT.Value(state, lhs.Value)
+			nextstate := p.gotoT.Value(uint(state), gorgo.TokType(lhs.Value))
 			newhead := head.Push(int(nextstate), lhs)
 			tracer().Debugf("new head = %v", newhead)
 		}
@@ -332,7 +332,7 @@ func (s *StdScanner) NextToken(expected []int) (int, interface{}) {
 // --- Helpers ----------------------------------------------------------
 
 // valstring is a short helper to stringify an action table entry.
-func valstring(v int32, m *sparse.IntMatrix) string {
+func valstring(v int32, m *lr.Table) string {
 	if v == m.NullValue() {
 		return "<none>"
 	} else if v == lr.AcceptAction {

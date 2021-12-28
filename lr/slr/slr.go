@@ -71,7 +71,6 @@ import (
 
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/scanner"
-	"github.com/npillmayer/gorgo/lr/sparse"
 )
 
 // tracer traces with key 'gorgo.lr'.
@@ -82,14 +81,14 @@ func tracer() tracing.Trace {
 // Parser is an SLR(1)-parser type. Create and initialize one with slr.NewParser(...)
 type Parser struct {
 	G       *lr.Grammar
-	stack   []stackitem       // parser stack
-	gotoT   *sparse.IntMatrix // GOTO table
-	actionT *sparse.IntMatrix // ACTION table
+	stack   []stackitem // parser stack
+	gotoT   *lr.Table   // GOTO table
+	actionT *lr.Table   // ACTION table
 }
 
 // We store pairs of state-IDs and symbol-IDs on the parse stack.
 type stackitem struct {
-	stateID int        // ID of a CFSM state
+	stateID uint       // ID of a CFSM state
 	symID   int        // ID of a grammar symbol (terminal or non-terminal)
 	span    gorgo.Span // input span over which this symbol reaches
 	//span    span // input span over which this symbol reaches
@@ -103,7 +102,7 @@ type stackitem struct {
 //type span [2]uint64 // start and end positions in the input string
 
 // NewParser creates an SLR(1) parser.
-func NewParser(g *lr.Grammar, gotoTable *sparse.IntMatrix, actionTable *sparse.IntMatrix) *Parser {
+func NewParser(g *lr.Grammar, gotoTable *lr.Table, actionTable *lr.Table) *Parser {
 	parser := &Parser{
 		G:       g,
 		stack:   make([]stackitem, 0, 512),
@@ -140,7 +139,7 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 	for !done {
 		tracer().Debugf("got token %q/%d from scanner", token.Lexeme(), tokval)
 		state := p.stack[len(p.stack)-1] // TOS
-		action := p.actionT.Value(state.stateID, int(tokval))
+		action := p.actionT.Value(state.stateID, tokval)
 		tracer().Debugf("action(%d,%d)=%s", state.stateID, tokval, valstring(action, p.actionT))
 		if action == p.actionT.NullValue() {
 			return false, fmt.Errorf("syntax error at %d/%v", tokval, token)
@@ -149,7 +148,7 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 			accepting, done = true, true
 			// TODO patch start symbol to have span(0,pos)
 		} else if action == lr.ShiftAction {
-			nextstate := int(p.gotoT.Value(state.stateID, int(tokval)))
+			nextstate := uint(p.gotoT.Value(state.stateID, tokval))
 			tracer().Debugf("shifting, next state = %d", nextstate)
 			p.stack = append(p.stack, // push a terminal state onto stack
 				stackitem{nextstate, int(tokval), token.Span()}) //span{pos, pos + length - 1}})
@@ -184,7 +183,7 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 //
 // TODO: perform semantic action on reduce, either by calling a user-provided
 // function from the grammar, or by constructing a node in a parse tree/forest.
-func (p *Parser) reduce(stateID int, rule *lr.Rule) (int, gorgo.Span) {
+func (p *Parser) reduce(stateID uint, rule *lr.Rule) (uint, gorgo.Span) {
 	tracer().Infof("reduce %v", rule)
 	handle := reverse(rule.RHS())
 	//var handlespan span
@@ -200,8 +199,8 @@ func (p *Parser) reduce(stateID int, rule *lr.Rule) (int, gorgo.Span) {
 	lhs := rule.LHS
 	// TODO: now perform sematic action or parse-tree build
 	state := p.stack[len(p.stack)-1] // TOS
-	nextstate := p.gotoT.Value(state.stateID, lhs.Value)
-	return int(nextstate), handlespan
+	nextstate := p.gotoT.Value(state.stateID, lhs.TokenType())
+	return uint(nextstate), handlespan
 }
 
 // --- Helpers ----------------------------------------------------------
@@ -217,7 +216,7 @@ func reverse(syms []*lr.Symbol) []*lr.Symbol {
 }
 
 // valstring is a short helper to stringify an action table entry.
-func valstring(v int32, m *sparse.IntMatrix) string {
+func valstring(v int32, m *lr.Table) string {
 	if v == m.NullValue() {
 		return "<none>"
 	} else if v == lr.AcceptAction {

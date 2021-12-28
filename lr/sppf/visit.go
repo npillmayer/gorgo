@@ -248,7 +248,8 @@ func (c *Cursor) traverseTopDown(listener Listener, dir Direction, breakmode Bre
 	if sym := c.current.Symbol(); sym.IsTerminal() {
 		// TODO find position of token
 		ctxt := makeCtxt(c.current.symbol.Extent, level+1, -1, nil)
-		return listener.Terminal(sym.Value, sym.TokenType(), ctxt)
+		//return listener.Terminal(sym.Value, sym.TokenType(), ctxt)
+		return listener.Terminal(sym.TokenType(), sym, ctxt)
 	}
 	tracer().Debugf(">>> %s", c.current.symbol)
 	ruleno, rhsNodes := c.RHS(c.current.symbol)
@@ -323,7 +324,7 @@ const (
 type Listener interface {
 	EnterRule(*lr.Symbol, []*RuleNode, RuleCtxt) bool
 	ExitRule(*lr.Symbol, []*RuleNode, RuleCtxt) interface{}
-	Terminal(int, interface{}, RuleCtxt) interface{}
+	Terminal(gorgo.TokType, *lr.Symbol, RuleCtxt) interface{}
 	Conflict(*lr.Symbol, RuleCtxt) (int, error)
 	MakeAttrs(*lr.Symbol) interface{}
 }

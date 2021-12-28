@@ -228,7 +228,7 @@ func makeParserOps(env *terex.Environment) {
 			if tree, ok2 := args.Cdar().Data.(*parsetree); ok2 {
 				ab := termr.NewASTBuilder(tree.G.Grammar())
 				for _, r := range rews {
-					ab.AddTermR(r)
+					ab.AddRewriter(r.name, r)
 				}
 				env := ab.AST(tree.tree, tree.retr)
 				if env == nil {
@@ -581,7 +581,7 @@ func (rew *Rewriter) Rewrite(l *terex.GCons, env *terex.Environment) terex.Eleme
 func (rew Rewriter) Descend(sppf.RuleCtxt) bool {
 	return true
 }
-func (rew Rewriter) Operator() terex.Operator {
+func (rew Rewriter) OperatorFor(gsym string) terex.Operator {
 	return rew.Op
 }
 
@@ -597,7 +597,7 @@ func (rew *Rewriter) Match(e terex.Element, env *terex.Environment) terex.Elemen
 	return terex.Elem(nil)
 }
 
-var _ termr.TermR = &Rewriter{}
+var _ termr.TermRewriter = &Rewriter{}
 
 // --- Chameleon operator ----------------------------------------------------
 

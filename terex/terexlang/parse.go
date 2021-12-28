@@ -27,7 +27,7 @@ import (
 
 // --- Grammar ---------------------------------------------------------------
 
-// Atom       ::=  '\'' Atom   // currently un-ambiguated by QuoteOrAtom
+// Atom       ::=  '\'' Atom         // currently un-ambiguated by QuoteOrAtom
 // Atom       ::=  ident             // a
 // Atom       ::=  string            // "abc"
 // Atom       ::=  number            // 123.45
@@ -84,9 +84,9 @@ func createParser() *earley.Parser {
 func newASTBuilder() *termr.ASTBuilder {
 	ab := termr.NewASTBuilder(grammar.Grammar())
 	//ab.AddTermR(opOp)
-	ab.AddTermR(quoteOp)
-	ab.AddTermR(seqOp)
-	ab.AddTermR(listOp)
+	ab.AddRewriter(quoteOp.name, quoteOp)
+	ab.AddRewriter(seqOp.name, seqOp)
+	ab.AddRewriter(listOp.name, listOp)
 	atomOp := makeASTTermR("Atom", "atom")
 	atomOp.rewrite = func(l *terex.GCons, env *terex.Environment) terex.Element {
 		// rewrite: (:atom x)  => x
@@ -94,12 +94,12 @@ func newASTBuilder() *termr.ASTBuilder {
 		// in (atom x), check if x is terminal
 		tracer().Infof("atomOp.rewrite: l.Cdr = %v", e)
 		if l.Cdr.IsLeaf() {
-			e = convertTerminalToken(e, ab.Env)
+			e = setTerminalTokenValue(e, ab.Env)
 		}
 		tracer().Infof("atomOp.rewrite => %s", e.String())
 		return e
 	}
-	ab.AddTermR(atomOp)
+	ab.AddRewriter(atomOp.name, atomOp)
 	return ab
 }
 
@@ -147,19 +147,6 @@ func AST(parsetree *sppf.Forest, tokRetr gorgo.TokenRetriever) (*terex.GCons, *t
 
 // ---------------------------------------------------------------------------
 
-// Eval evaluates an s-expr (given in textual form).
-// It will parse the string, create an internal S-expr structure and evaluate it,
-// using the symbols in env,
-/* func Eval(sexpr string) (*terex.GCons, *terex.Environment) {
-	quoted, env, _ := Quote(sexpr)
-	if quoted == nil {
-		return nil, env
-	}
-	evald := env.Eval(quoted.Tee())
-	T().Infof("eval(AST) = %s", evald.ListString())
-	return evald, env
-} */
-
 // QuoteAST returns an AST, which should be the result of parsing an s-expr, as
 // pure data.
 //
@@ -184,72 +171,40 @@ func QuoteAST(ast terex.Element, env *terex.Environment) (terex.Element, error) 
 	return q, quEnv.LastError()
 }
 
-// Quote quotes an s-expr (given in textual form), thus returning it as data.
-// It will parse the string, create an internal S-expr structure (AST) and quote it,
-// using the symbols in env,
-/* func Quote(sexpr string) (*terex.GCons, *terex.Environment, error) {
-	parsetree, tokRetr, err := Parse(sexpr)
-	if err != nil {
-		T().Errorf("Parsing error: %v", err)
-		return nil, nil, err
-	}
-	if parsetree == nil {
-		T().Errorf("Empty parse tree, no AST to create")
-		return nil, nil, fmt.Errorf("Empty parse tree, no AST to create")
-	}
-	astBuilder := newASTBuilder()
-	env := astBuilder.AST(parsetree, tokRetr)
-	if env == nil {
-		T().Errorf("Error creating AST from parsetree")
-		return nil, nil, env.LastError()
-	}
-	T().Infof("AST: %s", env.AST.ListString())
-	//r := env.Quote(env.AST)
-	//T().Infof("quote(AST) = %s", r.ListString())
-	//return r, env, nil
-	return nil, env, nil
-} */
-
 // --- S-expr AST-builder listener -------------------------------------------
 
-var quoteOp *sExprTermR // for Quote -> ... productions
-var seqOp *sExprTermR   // for Sequence -> ... productions
-var listOp *sExprTermR  // for List -> ... productions
+var quoteOp *sExprRewriter // for Quote -> ... productions
+var seqOp *sExprRewriter   // for Sequence -> ... productions
+var listOp *sExprRewriter  // for List -> ... productions
 
-type sExprTermR struct {
+type sExprRewriter struct {
 	name    string
 	opname  string
 	rewrite func(*terex.GCons, *terex.Environment) terex.Element
 	call    func(terex.Element, *terex.Environment) terex.Element
-	//isquote bool
-	// call   func(terex.Element, *terex.Environment) terex.Element
 }
 
-var _ terex.Operator = &sExprTermR{}
-var _ termr.TermR = &sExprTermR{}
+var _ terex.Operator = &sExprRewriter{}
+var _ termr.TermRewriter = &sExprRewriter{}
 
 //func makeASTTermR(name string, opname string, quoter bool) *sExprTermR {
-func makeASTTermR(name string, opname string) *sExprTermR {
-	termr := &sExprTermR{
+func makeASTTermR(name string, opname string) *sExprRewriter {
+	termr := &sExprRewriter{
 		name:   name,
 		opname: opname,
-		//isquote: quoter,
-		//rules:  make([]termr.RewriteRule, 0, 1),
 	}
 	return termr
 }
 
-func (trew *sExprTermR) String() string {
+func (trew *sExprRewriter) String() string {
 	return trew.name
 }
 
-func (trew *sExprTermR) Operator() terex.Operator {
+func (trew *sExprRewriter) OperatorFor(gsym string) terex.Operator {
 	return trew
-	//return listOp
-	//return &globalOpInEnv{op.opname}
 }
 
-func (trew *sExprTermR) Rewrite(l *terex.GCons, env *terex.Environment) terex.Element {
+func (trew *sExprRewriter) Rewrite(l *terex.GCons, env *terex.Environment) terex.Element {
 	tracer().Debugf("%s:trew.Rewrite[%s] called", trew.String(), l.ListString())
 	e := trew.rewrite(l, env)
 	// T().Debugf("%s:Op.Rewrite[%s] called, %d rules", op.Name(), l.ListString(), len(op.rules))
@@ -267,14 +222,13 @@ func (trew *sExprTermR) Rewrite(l *terex.GCons, env *terex.Environment) terex.El
 	// 	}
 	// }
 	return e
-	//return terex.Elem(e)
 }
 
-func (trew *sExprTermR) Descend(sppf.RuleCtxt) bool {
+func (trew *sExprRewriter) Descend(sppf.RuleCtxt) bool {
 	return true
 }
 
-func (trew *sExprTermR) Call(e terex.Element, env *terex.Environment) terex.Element {
+func (trew *sExprRewriter) Call(e terex.Element, env *terex.Environment) terex.Element {
 	opsym := env.FindSymbol(trew.opname, true)
 	if opsym == nil {
 		tracer().Errorf("Cannot find parsing operation %s", trew.opname)
@@ -287,22 +241,6 @@ func (trew *sExprTermR) Call(e terex.Element, env *terex.Environment) terex.Elem
 	}
 	return operator.Call(e, env)
 }
-
-// func (trew *sExprTermR) IsQuoter() bool {
-// 	return trew.isquote
-// }
-
-// func (op *sExprTermR) Rule(pattern *terex.GCons, rw termr.Rewriter) *sExprTermR {
-// 	r := termr.RewriteRule{
-// 		Pattern: pattern,
-// 		Rewrite: rw,
-// 	}
-// 	op.rules = append(op.rules, r)
-// 	return op
-// }
-
-// SingleTokenArg is a pattern matching an operator with a single arg of TokenType.
-// var SingleTokenArg *terex.GCons
 
 func initRewriters() {
 	// SingleTokenArg = terex.Cons(terex.Atomize(terex.OperatorType), termr.AnySymbol())
@@ -329,7 +267,8 @@ func initRewriters() {
 		q := env.Intern("quote", false)
 		qu := terex.Cons(terex.Atomize(q), l.Cddr())
 		//quotedList := terex.Elem(terex.Cons(l.Car, qu))
-		quotedList := terex.Elem(terex.Cons(terex.Atomize(listOp.Operator()), qu))
+		op := listOp.OperatorFor("quote")
+		quotedList := terex.Elem(terex.Cons(terex.Atomize(op), qu))
 		//quotedList := terex.Elem(terex.Cons(terex.Atomize(quoteOp.Operator()), qu))
 		//quotedList.Dump(tracing.LevelDebug)
 		return quotedList
@@ -394,47 +333,7 @@ func initRewriters() {
 
 // ---------------------------------------------------------------------------
 
-/*
-type globalOpInEnv struct {
-	opname string
-}
-
-func (op globalOpInEnv) String() string {
-	return op.opname
-}
-
-// Call is part of interface Operator.
-func (op globalOpInEnv) Call(term terex.Element, env *terex.Environment) terex.Element {
-	opsym := terex.GlobalEnvironment.FindSymbol(op.opname, true)
-	if opsym == nil {
-		T().Errorf("Cannot find parsing operation %s", op.opname)
-		return term
-	}
-	operator, ok := opsym.Value.Data.(terex.Operator)
-	if !ok {
-		T().Errorf("Cannot call parsing operation %s", op.opname)
-		return term
-	}
-	return operator.Call(term, env)
-}
-
-// Quote is part of interface Operator
-func (op globalOpInEnv) Quote(term terex.Element, env *terex.Environment) terex.Element {
-	opsym := terex.GlobalEnvironment.FindSymbol(op.opname, true)
-	if opsym == nil {
-		T().Errorf("Cannot find parsing operation %s", op.opname)
-		return term
-	}
-	operator, ok := opsym.Value.Data.(terex.Operator)
-	if !ok {
-		T().Errorf("Cannot quote-call parsing operation %s", op.opname)
-		return term
-	}
-	return operator.Call(term, env)
-}
-*/
-
-func convertTerminalToken(el terex.Element, env *terex.Environment) terex.Element {
+func setTerminalTokenValue(el terex.Element, env *terex.Environment) terex.Element {
 	if !el.IsAtom() {
 		return el
 	}
@@ -442,33 +341,29 @@ func convertTerminalToken(el terex.Element, env *terex.Environment) terex.Elemen
 	if atom.Type() != terex.TokenType {
 		return el
 	}
-	//t := atom.Data.(*terex.Token)
-	t := atom.Data.(gorgo.Token)
-	//token := t.Token.(*lexmachine.Token)
-	panic(fmt.Sprintf("token is of type %T", t))
-	token := t.(*LispToken)
-	tracer().Infof("Convert terminal token: '%v'", string(t.Lexeme()))
-	switch int(t.TokType()) {
+	token := atom.Data.(gorgo.Token)
+	deftok := token.(scanner.DefaultToken)
+	tracer().Infof("set value of terminal token: '%v'", string(token.Lexeme()))
+	switch int(token.TokType()) {
 	case tokenIds["NUM"]:
-		if f, err := strconv.ParseFloat(string(t.Lexeme()), 64); err == nil {
+		if f, err := strconv.ParseFloat(string(token.Lexeme()), 64); err == nil {
 			tracer().Debugf("   t.Value=%g", f)
-			token.value = f
+			deftok.Val = f
 		} else {
 			tracer().Errorf("   %s", err.Error())
 			return terex.Elem(terex.Atomize(err))
 		}
 	case tokenIds["STRING"]:
-		if (len(t.Lexeme())) <= 2 {
-			token.value = ""
+		if (len(token.Lexeme())) <= 2 {
+			deftok.Val = ""
 		} else { // trim off "…"
-			//runes := []rune(string(token.Lexeme))  // unnecessary
-			token.value = string(t.Lexeme()[1 : len(t.Lexeme())-1])
+			deftok.Val = string(token.Lexeme()[1 : len(token.Lexeme())-1])
 		}
 	case tokenIds["VAR"]:
 		panic("VAR type tokens not yet implemented")
 		//fallthrough
 	case tokenIds["ID"]:
-		s := string(t.Lexeme())
+		s := string(token.Lexeme())
 		//sym := terex.GlobalEnvironment.Intern(s, true)
 		sym := env.Intern(s, true)
 		if sym != nil {
@@ -485,8 +380,6 @@ func (r symbolPreservingResolver) Resolve(atom terex.Atom, env *terex.Environmen
 	terex.Element, error) {
 	if atom.Type() == terex.TokenType {
 		token := atom.Data.(gorgo.Token)
-		//token := t.Token.(*lexmachine.Token)
-		//token := t.Token.(*LispToken)
 		tracer().Debugf("Resolve terminal token: '%v'", string(token.Lexeme()))
 		switch int(token.TokType()) {
 		case tokenIds["NUM"]:

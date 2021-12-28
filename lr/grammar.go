@@ -3,6 +3,7 @@ package lr
 import (
 	"fmt"
 
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 )
 
@@ -26,7 +27,7 @@ type Symbol struct {
 
 func (lrsym *Symbol) String() string {
 	//return fmt.Sprintf("<%s|%d>", lrsym.Name, lrsym.Value)
-	return fmt.Sprintf("%s", lrsym.Name)
+	return lrsym.Name
 }
 
 // IsTerminal returns true if this symbol represents a terminal.
@@ -36,8 +37,8 @@ func (lrsym *Symbol) IsTerminal() bool {
 
 // TokenType is just an alias for lrsym.Value. For terminals, lrsym.Value holds the token
 // type/ID.
-func (lrsym *Symbol) TokenType() int {
-	return lrsym.Value
+func (lrsym *Symbol) TokenType() gorgo.TokType {
+	return gorgo.TokType(lrsym.Value)
 }
 
 func newSymbol(s string) *Symbol {

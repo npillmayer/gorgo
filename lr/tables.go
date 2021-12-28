@@ -11,6 +11,7 @@ import (
 	"github.com/emirpasic/gods/lists/arraylist"
 	"github.com/emirpasic/gods/sets/treeset"
 	"github.com/emirpasic/gods/utils"
+	"github.com/npillmayer/gorgo"
 	"github.com/npillmayer/gorgo/lr/iteratable"
 	"github.com/npillmayer/gorgo/lr/sparse"
 )
@@ -86,7 +87,7 @@ func (ga *LRAnalysis) gotoSetClosure(i *iteratable.Set, A *Symbol) (*iteratable.
 
 // CFSMState is a state within the CFSM for a grammar.
 type CFSMState struct {
-	ID     int             // serial ID of this state
+	ID     uint            // serial ID of this state
 	items  *iteratable.Set // configuration items within this state
 	Accept bool            // is this an accepting state?
 }
@@ -110,7 +111,7 @@ func (s *CFSMState) isErrorState() bool {
 }
 
 // Create a state from an item set
-func state(id int, iset *iteratable.Set) *CFSMState {
+func state(id uint, iset *iteratable.Set) *CFSMState {
 	s := &CFSMState{ID: id}
 	if iset == nil {
 		s.items = newItemSet()
@@ -120,10 +121,12 @@ func state(id int, iset *iteratable.Set) *CFSMState {
 	return s
 }
 
+/* no longer used
 func (s *CFSMState) allItems() []interface{} {
 	vals := s.items.Values()
 	return vals
 }
+*/
 
 func (s *CFSMState) String() string {
 	return fmt.Sprintf("(state %d | [%d])", s.ID, s.items.Size())
@@ -152,7 +155,7 @@ func edge(from, to *CFSMState, label *Symbol) *cfsmEdge {
 func stateComparator(s1, s2 interface{}) int {
 	c1 := s1.(*CFSMState)
 	c2 := s2.(*CFSMState)
-	return utils.IntComparator(c1.ID, c2.ID)
+	return utils.IntComparator(int(c1.ID), int(c2.ID))
 }
 
 // Add a state to the CFSM. Checks first if state is present.
@@ -206,7 +209,7 @@ type CFSM struct {
 	states  *treeset.Set    // all the states
 	edges   *arraylist.List // all the edges between states
 	S0      *CFSMState      // start state
-	cfsmIds int             // serial IDs for CFSM states
+	cfsmIds uint            // serial IDs for CFSM states
 }
 
 // create an empty (initial) CFSM automata.
@@ -225,8 +228,8 @@ type TableGenerator struct {
 	g            *Grammar
 	ga           *LRAnalysis
 	dfa          *CFSM
-	gototable    *sparse.IntMatrix
-	actiontable  *sparse.IntMatrix
+	gototable    *Table
+	actiontable  *Table
 	HasConflicts bool
 }
 
@@ -252,7 +255,7 @@ func (lrgen *TableGenerator) CFSM() *CFSM {
 // GotoTable returns the GOTO table for LR-parsing a grammar. The tables have to be
 // built by calling CreateTables() previously (or a separate call to
 // BuildGotoTable(...).)
-func (lrgen *TableGenerator) GotoTable() *sparse.IntMatrix {
+func (lrgen *TableGenerator) GotoTable() *Table {
 	if lrgen.gototable == nil {
 		tracer().P("lr", "gen").Errorf("tables not yet initialized")
 	}
@@ -262,7 +265,7 @@ func (lrgen *TableGenerator) GotoTable() *sparse.IntMatrix {
 // ActionTable returns the ACTION table for LR-parsing a grammar. The tables have to be
 // built by calling CreateTables() previously (or a separate call to
 // BuildSLR1ActionTable(...).)
-func (lrgen *TableGenerator) ActionTable() *sparse.IntMatrix {
+func (lrgen *TableGenerator) ActionTable() *Table {
 	if lrgen.actiontable == nil {
 		tracer().P("lr", "gen").Errorf("tables not yet initialized")
 	}
@@ -278,12 +281,12 @@ func (lrgen *TableGenerator) CreateTables() {
 
 // AcceptingStates returns all states of the CFSM which represent an accept action.
 // Clients have to call CreateTables() first.
-func (lrgen *TableGenerator) AcceptingStates() []int {
+func (lrgen *TableGenerator) AcceptingStates() []uint {
 	if lrgen.dfa == nil {
 		tracer().Errorf("tables not yet generated; call CreateTables() first")
 		return nil
 	}
-	acc := make([]int, 0, 3)
+	acc := make([]uint, 0, 3)
 	for _, x := range lrgen.dfa.states.Values() {
 		state := x.(*CFSMState)
 		if state.Accept {
@@ -381,17 +384,26 @@ func nodecolor(state *CFSMState) string {
 
 // BuildGotoTable builds the GOTO table. This is normally not called directly, but rather
 // via CreateTables().
-func (lrgen *TableGenerator) BuildGotoTable() *sparse.IntMatrix {
+func (lrgen *TableGenerator) BuildGotoTable() *Table {
 	statescnt := lrgen.dfa.states.Size()
-	maxtok := 0
+	var maxtok gorgo.TokType
+	var mintok gorgo.TokType
 	lrgen.g.EachSymbol(func(A *Symbol) interface{} {
+		tracer().Infof("%q.token-type = %d", A.Name, A.TokenType())
 		if A.TokenType() > maxtok { // find maximum token value
 			maxtok = A.TokenType()
+		} else if A.TokenType() < mintok { // find maximum token value
+			mintok = A.TokenType()
 		}
 		return nil
 	})
-	tracer().Infof("GOTO table of size %d x %d", statescnt, maxtok)
-	gototable := sparse.NewIntMatrix(statescnt, maxtok, sparse.DefaultNullValue)
+	extent := uint(maxtok - mintok + 1)
+	tracer().Infof("GOTO table of size %d x (%d-%d=%d)", statescnt, maxtok, mintok, extent)
+	matrix := sparse.NewIntMatrix(uint(statescnt), extent, sparse.DefaultNullValue)
+	gototable := &Table{
+		matrix: matrix,
+		mincol: mintok,
+	}
 	states := lrgen.dfa.states.Iterator()
 	for states.Next() {
 		state := states.Value().(*CFSMState)
@@ -399,7 +411,8 @@ func (lrgen *TableGenerator) BuildGotoTable() *sparse.IntMatrix {
 		for _, e := range edges {
 			//T().Debugf("edge %s --%v--> %v", state, e.label, e.to)
 			//T().Debugf("GOTO (%d , %d ) = %d", state.ID, symvalue(e.label), e.to.ID)
-			gototable.Set(state.ID, e.label.Value, int32(e.to.ID))
+			//
+			gototable.set(state.ID, gorgo.TokType(e.label.Value), int32(e.to.ID))
 		}
 	}
 	return gototable
@@ -423,11 +436,11 @@ func ActionTableAsHTML(lrgen *TableGenerator, w io.Writer) {
 	parserTableAsHTML(lrgen, "ACTION", lrgen.actiontable, w)
 }
 
-func parserTableAsHTML(lrgen *TableGenerator, tname string, table *sparse.IntMatrix, w io.Writer) {
+func parserTableAsHTML(lrgen *TableGenerator, tname string, table *Table, w io.Writer) {
 	var symvec = make([]*Symbol, len(lrgen.g.terminals)+len(lrgen.g.nonterminals))
 	io.WriteString(w, "<html><body>\n")
 	io.WriteString(w, "<img src=\"cfsm.png\"/><p>")
-	io.WriteString(w, fmt.Sprintf("%s table of size = %d<p>", tname, table.ValueCount()))
+	io.WriteString(w, fmt.Sprintf("%s table of size = %d<p>", tname, table.matrix.ValueCount()))
 	io.WriteString(w, "<table border=1 cellspacing=0 cellpadding=5>\n")
 	io.WriteString(w, "<tr bgcolor=#cccccc><td></td>\n")
 	j := 0
@@ -444,7 +457,10 @@ func parserTableAsHTML(lrgen *TableGenerator, tname string, table *sparse.IntMat
 		state := states.Value().(*CFSMState)
 		io.WriteString(w, fmt.Sprintf("<tr><td>state %d</td>\n", state.ID))
 		for _, A := range symvec {
-			v1, v2 := table.Values(state.ID, A.Value)
+			if A.Value < 0 {
+				panic("cannot use parser table for symbol with symbol-value < 0")
+			}
+			v1, v2 := table.Values(state.ID, gorgo.TokType(A.Value))
 			if v1 == table.NullValue() {
 				td = "&nbsp;"
 			} else if v2 == table.NullValue() {
@@ -466,27 +482,40 @@ func parserTableAsHTML(lrgen *TableGenerator, tname string, table *sparse.IntMat
 // BuildLR0ActionTable contructs the LR(0) Action table. This method is not called by
 // CreateTables(), as we normally use an SLR(1) parser and therefore an action table with
 // lookahead included. This method is provided as an add-on.
-func (lrgen *TableGenerator) BuildLR0ActionTable() (*sparse.IntMatrix, bool) {
-	statescnt := lrgen.dfa.states.Size()
+func (lrgen *TableGenerator) BuildLR0ActionTable() (*Table, bool) {
+	statescnt := uint(lrgen.dfa.states.Size())
 	tracer().Infof("ACTION.0 table of size %d x 1", statescnt)
-	actions := sparse.NewIntMatrix(statescnt, 1, sparse.DefaultNullValue)
+	matrix := sparse.NewIntMatrix(statescnt, 1, sparse.DefaultNullValue)
+	actions := &Table{
+		matrix: matrix,
+		mincol: 0,
+	}
 	return lrgen.buildActionTable(actions, false)
 }
 
 // BuildSLR1ActionTable constructs the SLR(1) Action table. This method is normally not called
 // by clients, but rather via CreateTables(). It builds an action table including
 // lookahead (using the FOLLOW-set created by the grammar analyzer).
-func (lrgen *TableGenerator) BuildSLR1ActionTable() (*sparse.IntMatrix, bool) {
-	statescnt := lrgen.dfa.states.Size()
-	maxtok := 0
+func (lrgen *TableGenerator) BuildSLR1ActionTable() (*Table, bool) {
+	statescnt := uint(lrgen.dfa.states.Size())
+	var maxtok gorgo.TokType
+	var mintok gorgo.TokType
 	lrgen.g.EachSymbol(func(A *Symbol) interface{} {
-		if A.TokenType() > maxtok { // find maximum token value
+		if A.TokenType() > maxtok { // find minimum and  maximum token value
 			maxtok = A.TokenType()
+		} else if A.TokenType() < mintok {
+			mintok = A.TokenType()
 		}
 		return nil
 	})
-	tracer().Infof("ACTION.1 table of size %d x %d", statescnt, maxtok)
-	actions := sparse.NewIntMatrix(statescnt, maxtok, sparse.DefaultNullValue)
+	extent := uint(maxtok - mintok + 1)
+	tracer().Infof("ACTION.1 table of size %d x (%d-%d=%d)", statescnt, maxtok, mintok, extent)
+	matrix := sparse.NewIntMatrix(statescnt, extent, sparse.DefaultNullValue)
+	actions := &Table{
+		matrix: matrix,
+		mincol: mintok,
+	}
+	// TODO shilft all input token values by mintok
 	return lrgen.buildActionTable(actions, true)
 }
 
@@ -505,8 +534,9 @@ func (lrgen *TableGenerator) BuildSLR1ActionTable() (*sparse.IntMatrix, bool) {
 // Shift entries are represented as -1.  Reduce entries are encoded as the
 // ordinal no. of the grammar rule to reduce. 0 means reducing the start rule,
 // i.e., accept.
-func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bool) (
-	*sparse.IntMatrix, bool) {
+func (lrgen *TableGenerator) buildActionTable(actions *Table, slr1 bool) (*Table, bool) {
+	//func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bool) (
+	//*sparse.IntMatrix, bool) {
 	//
 	hasConflicts := false
 	states := lrgen.dfa.states.Iterator()
@@ -529,14 +559,14 @@ func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bo
 							tracer().Debugf("    relax, double shift")
 						} else {
 							hasConflicts = true
-							actions.Add(state.ID, A.TokenType(), int32(P))
+							actions.add(state.ID, A.TokenType(), int32(P))
 						}
 					} else {
-						actions.Add(state.ID, A.TokenType(), int32(P))
+						actions.add(state.ID, A.TokenType(), int32(P))
 					}
 					tracer().Debugf(actionEntry(state.ID, A.TokenType(), actions))
 				} else {
-					actions.Add(state.ID, 1, int32(P))
+					actions.add(state.ID, 1, int32(P))
 				}
 			}
 			if A == nil { // we are at the end of a rule
@@ -548,18 +578,18 @@ func (lrgen *TableGenerator) buildActionTable(actions *sparse.IntMatrix, slr1 bo
 						laslice := lookaheads.AppendTo(nil)
 						//for _, la := range lookaheads {
 						for _, la := range laslice {
-							a1, a2 := actions.Values(state.ID, la)
+							a1, a2 := actions.Values(state.ID, gorgo.TokType(la))
 							if a1 != actions.NullValue() || a2 != actions.NullValue() {
 								tracer().Debugf("    %s is 2nd action", valstring(int32(inx), actions))
 								hasConflicts = true
 							}
-							actions.Add(state.ID, la, int32(inx)) // reduce rule[inx]
+							actions.add(state.ID, gorgo.TokType(la), int32(inx)) // reduce rule[inx]
 							tracer().Debugf("    creating reduce_%d action entry @ %v for %v", inx, la, rule)
-							tracer().Debugf(actionEntry(state.ID, la, actions))
+							tracer().Debugf(actionEntry(state.ID, gorgo.TokType(la), actions))
 						}
 					} else {
 						tracer().Debugf("    creating reduce_%d action entry for %v", inx, rule)
-						actions.Add(state.ID, 1, int32(inx)) // reduce rule[inx]
+						actions.add(state.ID, 1, int32(inx)) // reduce rule[inx]
 					}
 				}
 			}
@@ -575,10 +605,51 @@ func pT(state *CFSMState, terminal *Symbol) int {
 	return ShiftAction
 }
 
+type Table struct {
+	matrix *sparse.IntMatrix
+	mincol gorgo.TokType // lowest value for index j => offset for access
+}
+
+func (t *Table) add(i uint, tt gorgo.TokType, val int32) {
+	j := tt - t.mincol
+	if j < 0 {
+		panic(fmt.Sprintf("lr.Table.add() with index < 0: %d", j))
+	}
+	t.matrix.Add(i, uint(j), val)
+}
+
+func (t *Table) set(i uint, tt gorgo.TokType, val int32) {
+	j := tt - t.mincol
+	if j < 0 {
+		panic(fmt.Sprintf("lr.Table.set() with index < 0: %d", j))
+	}
+	t.matrix.Set(i, uint(j), val)
+}
+
+func (t *Table) NullValue() int32 {
+	return t.matrix.NullValue()
+}
+
+func (t *Table) Value(i uint, tt gorgo.TokType) int32 {
+	j := tt - t.mincol
+	if j < 0 {
+		panic(fmt.Sprintf("lr.Table.Value() with index < 0: %d", j))
+	}
+	return t.matrix.Value(i, uint(j))
+}
+
+func (t *Table) Values(i uint, tt gorgo.TokType) (int32, int32) {
+	j := tt - t.mincol
+	if j < 0 {
+		panic(fmt.Sprintf("lr.Table.Values() with index < 0: %d", j))
+	}
+	return t.matrix.Values(i, uint(j))
+}
+
 // ----------------------------------------------------------------------
 
-func unique(in []int) []int { // from slice tricks
-	sort.Ints(in)
+func unique(in []uint) []uint { // from slice tricks
+	sortUInts(in)
 	j := 0
 	for i := 1; i < len(in); i++ {
 		if in[j] == in[i] {
@@ -592,13 +663,13 @@ func unique(in []int) []int { // from slice tricks
 	return result
 }
 
-func actionEntry(stateID int, la int, aT *sparse.IntMatrix) string {
+func actionEntry(stateID uint, la gorgo.TokType, aT *Table) string {
 	a1, a2 := aT.Values(stateID, la)
 	return fmt.Sprintf("Action(%s,%s)", valstring(a1, aT), valstring(a2, aT))
 }
 
 // valstring is a short helper to stringify an action table entry.
-func valstring(v int32, m *sparse.IntMatrix) string {
+func valstring(v int32, m *Table) string {
 	if v == m.NullValue() {
 		return "<none>"
 	} else if v == AcceptAction {
@@ -627,3 +698,13 @@ func itemSetString(S *iteratable.Set) string {
 	b.WriteString(" }")
 	return b.String()
 }
+
+// sortUInts sorts a slice of ints in increasing order.
+func sortUInts(x []uint) { sort.Sort(UIntSlice(x)) }
+
+// UIntSlice attaches the methods of sort.Interface to []uint.
+type UIntSlice []uint
+
+func (x UIntSlice) Len() int           { return len(x) }
+func (x UIntSlice) Less(i, j int) bool { return x[i] < x[j] }
+func (x UIntSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }

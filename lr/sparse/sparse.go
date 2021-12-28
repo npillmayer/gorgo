@@ -39,21 +39,21 @@ import (
 // null-values is not re-claimed.
 type IntMatrix struct {
 	values  []triplet
-	rowcnt  int
-	colcnt  int
+	rowcnt  uint
+	colcnt  uint
 	nullval int32
 }
 
 // Triplet values to store
 type triplet struct {
-	row, col int
+	row, col uint
 	value    intPair
 }
 
 // NewIntMatrix creates a new matrix for int, size m x n. The 3rd argument is a null-value,
 // indicating empty entries (use DefaultNullValue if you haven't any specific
 // requirements).
-func NewIntMatrix(m, n int, nullValue int32) *IntMatrix {
+func NewIntMatrix(m, n uint, nullValue int32) *IntMatrix {
 	return &IntMatrix{
 		values:  []triplet{},
 		rowcnt:  m,
@@ -67,12 +67,12 @@ const DefaultNullValue = -2147483648
 
 // M returns the row count.
 func (m *IntMatrix) M() int {
-	return m.rowcnt
+	return int(m.rowcnt)
 }
 
 // N returns the column count.
 func (m *IntMatrix) N() int {
-	return m.colcnt
+	return int(m.colcnt)
 }
 
 // NullValue returns this matrix' null value
@@ -86,7 +86,7 @@ func (m *IntMatrix) ValueCount() int {
 }
 
 // Value returns the primary value at position (i,j), or NullValue
-func (m *IntMatrix) Value(i, j int) int32 {
+func (m *IntMatrix) Value(i, j uint) int32 {
 	for _, t := range m.values {
 		if !t.storedLeftOf(i, j) { // have skipped all lesser indices
 			if t.storedAt(i, j) {
@@ -99,7 +99,7 @@ func (m *IntMatrix) Value(i, j int) int32 {
 }
 
 // Values returns the pair of values at position (i,j), or (NullValue, NullValue)
-func (m *IntMatrix) Values(i, j int) (int32, int32) {
+func (m *IntMatrix) Values(i, j uint) (int32, int32) {
 	for _, t := range m.values {
 		if !t.storedLeftOf(i, j) { // have skipped all lesser indices
 			if t.storedAt(i, j) {
@@ -112,16 +112,16 @@ func (m *IntMatrix) Values(i, j int) (int32, int32) {
 }
 
 // Set a value in the matrix at position (i,j).
-func (m *IntMatrix) Set(i, j int, value int32) *IntMatrix {
+func (m *IntMatrix) Set(i, j uint, value int32) *IntMatrix {
 	return m.setOrAdd(i, j, value, false)
 }
 
 // Add a value in the matrix at position (i,j).
-func (m *IntMatrix) Add(i, j int, value int32) *IntMatrix {
+func (m *IntMatrix) Add(i, j uint, value int32) *IntMatrix {
 	return m.setOrAdd(i, j, value, true)
 }
 
-func (m *IntMatrix) setOrAdd(i, j int, value int32, doAdd bool) *IntMatrix {
+func (m *IntMatrix) setOrAdd(i, j uint, value int32, doAdd bool) *IntMatrix {
 	at := 0 // will be position of new value
 	for k, t := range m.values {
 		if !t.storedLeftOf(i, j) { // have skipped all lesser indices
@@ -158,11 +158,11 @@ func addIntValue(v intPair, n int32, nullval int32) intPair {
 	return v
 }
 
-func (t *triplet) storedLeftOf(i, j int) bool {
+func (t *triplet) storedLeftOf(i, j uint) bool {
 	return t.row < i || t.row == i && t.col < j
 }
 
-func (t *triplet) storedAt(i, j int) bool {
+func (t *triplet) storedAt(i, j uint) bool {
 	return (t.row == i && t.col == j)
 }
 
