@@ -116,12 +116,12 @@ func (f *Forest) AddReduction(sym *lr.Symbol, rule int, rhs []*SymbolNode) *Symb
 		return nil
 	}
 	tracer().Debugf("Reduction: %s → RHS = %v", sym.Name, rhs)
-	start := rhs[0].Extent.From()
-	end := rhs[len(rhs)-1].Extent.To()
-	rhsnode := f.addRHSNode(rule, rhs, rhs[0].Extent.From())
+	start := rhs[0].Extent.Start()
+	end := rhs[len(rhs)-1].Extent.End()
+	rhsnode := f.addRHSNode(rule, rhs, rhs[0].Extent.Start())
 	f.addOrEdge(sym, rhsnode, start, end)
 	for seq, d := range rhs {
-		f.addAndEdge(rhsnode, uint(seq), d.Symbol, d.Extent.From(), d.Extent.To())
+		f.addAndEdge(rhsnode, uint(seq), d.Symbol, d.Extent.Start(), d.Extent.End())
 		f.parent[d] = f.findSymNode(sym, start, end)
 	}
 	symnode := f.findSymNode(sym, start, end)
@@ -271,7 +271,7 @@ func rhsSignature(rhs []*SymbolNode, start uint64) int32 {
 			h *= v
 		}
 		h %= largePrime
-		from := symnode.Extent.From()
+		from := symnode.Extent.Start()
 		h *= o[(from*from)%uint64(len(o))] + int64(from)
 		h %= largePrime
 	}
@@ -485,7 +485,7 @@ func ToGraphViz(forest *Forest, w io.Writer) {
 	}
 	nodes = forest.symbolNodes.All()
 	nodes.Sort(func(x, y interface{}) bool {
-		return x.(*SymbolNode).Extent.From() < y.(*SymbolNode).Extent.From()
+		return x.(*SymbolNode).Extent.Start() < y.(*SymbolNode).Extent.Start()
 	})
 	nodes.IterateOnce()
 	for nodes.Next() {

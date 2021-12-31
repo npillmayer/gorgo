@@ -324,7 +324,7 @@ func (p *Parser) walk(item lr.Item, pos uint64, trys ruleset,
 		Extent: extent,
 		Value:  value,
 	}
-	tracer().Infof("Tree node    %d|-----%s-----|%d", extent.From(), item.Rule().LHS.Name, extent.To())
+	tracer().Infof("Tree node    %d|-----%s-----|%d", extent.Start(), item.Rule().LHS.Name, extent.End())
 	return node
 }
 
@@ -402,7 +402,7 @@ func (tb *TreeBuilder) Forest() *sppf.Forest {
 // Reduce is a listener method, called for Earley-completions.
 func (tb *TreeBuilder) Reduce(sym *lr.Symbol, rule int, rhs []*RuleNode, span gorgo.Span, level int) interface{} {
 	if len(rhs) == 0 {
-		return tb.forest.AddEpsilonReduction(sym, rule, span.From())
+		return tb.forest.AddEpsilonReduction(sym, rule, span.Start())
 	}
 	treenodes := make([]*sppf.SymbolNode, len(rhs))
 	for i, r := range rhs {
@@ -417,7 +417,7 @@ func (tb *TreeBuilder) Terminal(token gorgo.Token, level int) interface{} {
 	// TODO
 	t := tb.grammar.Terminal(int(token.TokType()))
 	//t := tb.grammar.Terminal(tokval)
-	return tb.forest.AddTerminal(t, token.Span().From())
+	return tb.forest.AddTerminal(t, token.Span().Start())
 }
 
 var _ Listener = &TreeBuilder{}

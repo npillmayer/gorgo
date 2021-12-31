@@ -1,5 +1,5 @@
 /*
-Package dss implements variants of a DAG-structured stack (DSS).
+Package dss implements a DAG-structured stack (DSS).
 It is used for GLR-parsing and for substring parsing.
 A DSS is suitable for parsing with ambiguous grammars, so the parser can
 execute a breadth-first (quasi-)parallel shift and/or reduce operation

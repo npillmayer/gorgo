@@ -44,13 +44,13 @@ type TokenRetriever func(uint64) Token
 // behind the end.
 type Span [2]uint64 // (x…y)
 
-// From returns the start value of a span.
-func (s Span) From() uint64 {
+// Start returns the start value of a span.
+func (s Span) Start() uint64 {
 	return s[0]
 }
 
-// To returns the end value of a span.
-func (s Span) To() uint64 {
+// End returns the end value of a span.
+func (s Span) End() uint64 {
 	return s[1]
 }
 

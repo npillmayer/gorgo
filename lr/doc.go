@@ -1,5 +1,5 @@
 /*
-Package lr implements prerequisites for LR parsing.
+Package lr and its subpackages implement variations of LR parsing.
 It is mainly intended for Markdown parsing, but may be of use for
 other purposes, too.
 

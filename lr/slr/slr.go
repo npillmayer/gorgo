@@ -160,7 +160,7 @@ func (p *Parser) Parse(S *lr.CFSMState, scan scanner.Tokenizer) (bool, error) {
 			nextstate, handlespan := p.reduce(state.stateID, rule)
 			if handlespan.IsNull() { // resulted from an epsilon production
 				//handlespan = span{pos - 1, pos - 1} // epsilon was just before lookahead
-				pos := token.Span().From()
+				pos := token.Span().Start()
 				handlespan = gorgo.Span{pos - 1, pos - 1} // epsilon was just before lookahead
 			}
 			tracer().Debugf("reduced to next state = %d", nextstate)

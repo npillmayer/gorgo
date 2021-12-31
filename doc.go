@@ -15,7 +15,7 @@ build homogenous abstract syntax trees.
 ■ runtime: Package runtime provides some unsophisticated supporting data types for interpreter
 runtimes.
 
-The base package contiains data types which are used throughout all the other packages.
+The base package contains data types which are used throughout all the other packages.
 
 License
 

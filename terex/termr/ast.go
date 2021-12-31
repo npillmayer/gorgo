@@ -220,7 +220,7 @@ func (ab *ASTBuilder) Terminal(tokval gorgo.TokType, terminal *lr.Symbol, ctxt s
 		return terex.Elem(nil)
 	}
 	//terminal := ab.G.Terminal(tokval)
-	tokpos := ctxt.Span.From()
+	tokpos := ctxt.Span.Start()
 	t := ab.toks(tokpos) // opaque token type
 	//atom := terex.Atomize(&terex.Token{Name: terminal.Name, TokType: tokval, Token: t})
 	if t == nil {
