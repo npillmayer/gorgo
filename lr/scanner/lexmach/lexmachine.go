@@ -1,15 +1,22 @@
-package scanner
+package lexmach
 
 import (
 	"strings"
 
 	"github.com/npillmayer/gorgo"
+	"github.com/npillmayer/gorgo/lr/scanner"
+	"github.com/npillmayer/schuko/tracing"
 
 	"github.com/timtadh/lexmachine"
 	"github.com/timtadh/lexmachine/machines"
 )
 
 // lexmachine adapter
+
+// tracer traces with key 'gorgo.scanner'.
+func tracer() tracing.Trace {
+	return tracing.Select("gorgo.scanner")
+}
 
 // LMAdapter is a lexmachine adapter to use lexmachine as a scanner.
 type LMAdapter struct {
@@ -56,7 +63,7 @@ type LMScanner struct {
 	Error   func(error)
 }
 
-var _ Tokenizer = (*LMScanner)(nil)
+var _ scanner.Tokenizer = (*LMScanner)(nil)
 
 // SetErrorHandler sets an error handler for the scanner.
 func (lms *LMScanner) SetErrorHandler(h func(error)) {
@@ -65,6 +72,11 @@ func (lms *LMScanner) SetErrorHandler(h func(error)) {
 		return
 	}
 	lms.Error = h
+}
+
+// Default error reporting function for lexmachine-based scanners
+func logError(e error) {
+	tracer().Errorf("scanner error: " + e.Error())
 }
 
 // NextToken is part of the Tokenizer interface.
@@ -80,15 +92,15 @@ func (lms *LMScanner) NextToken() gorgo.Token {
 		tok, err, eof = lms.scanner.Next()
 	}
 	if eof {
-		return DefaultToken{kind: EOF, lexeme: "", span: gorgo.Span{0, 0}}
+		return scanner.MakeDefaultToken(scanner.EOF, "", gorgo.Span{0, 0})
 	}
 	tracer().Debugf("tok is %T | %v", tok, tok)
 	token := tok.(*lexmachine.Token)
-	return DefaultToken{
-		kind:   gorgo.TokType(token.Type),
-		lexeme: string(string(token.Lexeme)),
-		span:   gorgo.Span{uint64(token.StartColumn), uint64(token.EndColumn)},
-	}
+	return scanner.MakeDefaultToken(
+		gorgo.TokType(token.Type),
+		string(string(token.Lexeme)),
+		gorgo.Span{uint64(token.StartColumn), uint64(token.EndColumn)},
+	)
 }
 
 // ---------------------------------------------------------------------------

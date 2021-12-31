@@ -2,7 +2,7 @@
 Package scanner defines an interface for scanners to be used with parsers of package lr.
 
 Two default scanner implementations are provided: (1) a thin wrapper over the Go std lib
-'text/scanner', and (2) an adapter for lexmachine.
+'text/scanner', and (2) an adapter for lexmachine, living in sub-package `lexmach`.
 
 License
 
@@ -110,6 +110,14 @@ type DefaultToken struct {
 	lexeme string
 	Val    interface{}
 	span   gorgo.Span
+}
+
+func MakeDefaultToken(typ gorgo.TokType, lexeme string, span gorgo.Span) DefaultToken {
+	return DefaultToken{
+		kind:   typ,
+		lexeme: lexeme,
+		span:   span,
+	}
 }
 
 func (t DefaultToken) TokType() gorgo.TokType {
