@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"github.com/npillmayer/gorgo/lr/scanner"
+	"github.com/npillmayer/gorgo/lr/scanner/lexmach"
 	"github.com/timtadh/lexmachine"
 )
 
@@ -63,18 +64,18 @@ func Token(t string) (string, int) {
 }
 
 // Lexer creates a new lexmachine lexer.
-func Lexer() (*scanner.LMAdapter, error) {
+func Lexer() (*lexmach.LMAdapter, error) {
 	initTokens()
 	init := func(lexer *lexmachine.Lexer) {
-		lexer.Add([]byte(`;[^\n]*\n?`), scanner.Skip) // skip comments
+		lexer.Add([]byte(`;[^\n]*\n?`), lexmach.Skip) // skip comments
 		lexer.Add([]byte(`\"[^"]*\"`), makeToken("STRING"))
 		lexer.Add([]byte(`\#?([a-z]|[A-Z])([a-z]|[A-Z]|[0-9]|_|-)*[!\?\#]?`), makeToken("ID"))
 		lexer.Add([]byte(`$([a-z]|[A-Z])([a-z]|[A-Z]|[0-9]|_|-)*[!\?]?`), makeToken("VAR"))
 		lexer.Add([]byte(`[\+\-]?[0-9]+(\.[0-9]+)?`), makeToken("NUM"))
-		lexer.Add([]byte(`( |\,|\t|\n|\r)+`), scanner.Skip)
+		lexer.Add([]byte(`( |\,|\t|\n|\r)+`), lexmach.Skip)
 		//lexer.Add([]byte(`.`), makeToken("ID"))
 	}
-	adapter, err := scanner.NewLMAdapter(init, append(literals, ops...), keywords, tokenIds)
+	adapter, err := lexmach.NewLMAdapter(init, append(literals, ops...), keywords, tokenIds)
 	if err != nil {
 		return nil, err
 	}
@@ -86,5 +87,5 @@ func makeToken(s string) lexmachine.Action {
 	if !ok {
 		panic(fmt.Errorf("unknown token: %s", s))
 	}
-	return scanner.MakeToken(s, id)
+	return lexmach.MakeToken(s, id)
 }

@@ -44,7 +44,7 @@ func TestLM(t *testing.T) {
 		token := sc.NextToken()
 		count := 0
 		for token.TokType() != scanner.EOF {
-			t.Logf(" %4d | %15s | @%5d", token.TokType(), token.Lexeme(), token.Span().From())
+			t.Logf(" %4d | %15s | @%5d", token.TokType(), token.Lexeme(), token.Span().Start())
 			//tokval, token, pos, _ = scanner.NextToken(AnyToken)
 			token = sc.NextToken()
 			count++

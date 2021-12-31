@@ -1,8 +1,8 @@
 /*
 Package scanner defines an interface for scanners to be used with parsers of package lr.
 
-Two default scanner implementations are provided: (1) a thin wrapper over the Go std lib
-'text/scanner', and (2) an adapter for lexmachine, living in sub-package `lexmach`.
+Two default scanner implementations are provided: (1) a thin wrapper over the Go standard
+library's 'text/scanner', and (2) an adapter for lexmachine, living in sub-package `lexmach`.
 
 License
 

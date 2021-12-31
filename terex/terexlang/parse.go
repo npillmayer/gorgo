@@ -19,6 +19,7 @@ import (
 	"github.com/npillmayer/gorgo/lr"
 	"github.com/npillmayer/gorgo/lr/earley"
 	"github.com/npillmayer/gorgo/lr/scanner"
+	"github.com/npillmayer/gorgo/lr/scanner/lexmach"
 	"github.com/npillmayer/gorgo/lr/sppf"
 	"github.com/npillmayer/gorgo/terex"
 	"github.com/npillmayer/gorgo/terex/termr"
@@ -60,7 +61,7 @@ func makeTeRExGrammar() (*lr.LRAnalysis, error) {
 }
 
 var grammar *lr.LRAnalysis
-var lexer *scanner.LMAdapter
+var lexer *lexmach.LMAdapter
 
 var startOnce sync.Once // monitors one-time creation of grammar and lexer
 
