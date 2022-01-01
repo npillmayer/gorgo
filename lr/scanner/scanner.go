@@ -1,8 +1,26 @@
 /*
 Package scanner defines an interface for scanners to be used with parsers of package lr.
 
+The main interface defined in package scanner is the Tokenizer. All the parsers of package
+gorgo.lr need a Tokenizer to be plugged in for reading and splitting the input stream.
+
 Two default scanner implementations are provided: (1) a thin wrapper over the Go standard
 library's 'text/scanner', and (2) an adapter for lexmachine, living in sub-package `lexmach`.
+
+Some supporting functions are provided for option (3), which is tokenization in terms of
+“category codes”. This is a concept used most prominently in Donald E. Knuth's TeX and
+MetaFont programs. Input characters are grouped into categories, and in turn tokens are
+constructed from sequences of categorized characters. This hugely simplyfies pattern
+recogntion and avoids having to deal with complex regular expressions. For average DSL
+definitions a simple automaton on top of category sequences can readily be implemented by hand.
+
+As an example, consider the lexical recognition of relational operators.
+We define a category for them:
+
+	const RelOp CatCode = 1
+
+Then we define a RuneCategorizer which will return `RelOp` for each of input characters
+'<', '>', '=' and '!'.
 
 License
 
@@ -15,7 +33,6 @@ Copyright © 2017–2022 Norbert Pillmayer <norbert@pillmayer.com>
 package scanner
 
 import (
-	"fmt"
 	"io"
 	"text/scanner"
 
@@ -30,6 +47,8 @@ func tracer() tracing.Trace {
 
 // EOF is identical to text/scanner.EOF.
 // Token types are replicated here for practical reasons.
+// Clients are not required to use any of these, except respect `EOF` as a signal
+// that a tokenzier has reached the end of its input.
 const (
 	EOF       = scanner.EOF
 	Ident     = scanner.Ident
@@ -41,10 +60,12 @@ const (
 	Comment   = scanner.Comment
 )
 
-// Tokenizer is a scanner interface.
+// Tokenizer is a scanner interface used by the parsers of package gorgo.lr.
+// Please refer to sub-packages of lr for examples on how to plug a scanner.Tokenizer
+// into parsers.
 type Tokenizer interface {
-	NextToken() gorgo.Token
-	SetErrorHandler(func(error))
+	NextToken() gorgo.Token      // read the next token from the input stream
+	SetErrorHandler(func(error)) // instruct the tokenizer on how to process errors
 }
 
 // DefaultTokenizer is a default implementation, backed by scanner.Scanner.
@@ -63,7 +84,8 @@ func logError(e error) {
 	tracer().Errorf("scanner error: " + e.Error())
 }
 
-// GoTokenizer creates a scanner/tokenizer accepting tokens similar to the Go language.
+// GoTokenizer creates a Tokenizer accepting tokens similar to the Go language.
+// It is a thin wrapper around text/scanner.
 func GoTokenizer(sourceID string, input io.Reader, opts ...Option) *DefaultTokenizer {
 	t := &DefaultTokenizer{}
 	t.Error = logError
@@ -76,6 +98,8 @@ func GoTokenizer(sourceID string, input io.Reader, opts ...Option) *DefaultToken
 }
 
 // SetErrorHandler sets an error handler for the scanner.
+// Individual scanners may use this to recover from error conditions, e.g. by
+// skipping tokens.
 func (t *DefaultTokenizer) SetErrorHandler(h func(error)) {
 	if h == nil {
 		t.Error = logError
@@ -85,6 +109,7 @@ func (t *DefaultTokenizer) SetErrorHandler(h func(error)) {
 }
 
 // NextToken is part of the Tokenizer interface.
+// It is called by parsers to receive the next input token.
 func (t *DefaultTokenizer) NextToken() gorgo.Token {
 	t.lastToken = t.Scan()
 	if t.lastToken == scanner.EOF {
@@ -104,11 +129,14 @@ func (t *DefaultTokenizer) NextToken() gorgo.Token {
 // --- Default tokens --------------------------------------------------------
 
 // DefaultToken is a very unsophisticated token type, used as default for the Go
-// tokenizer as well as the LexMachine scanner.
+// tokenizer as well as the LexMachine adapter.
+//
+// DefaultToken implements interface gorgo.Token.
+//
 type DefaultToken struct {
 	kind   gorgo.TokType
 	lexeme string
-	Val    interface{}
+	Val    interface{} // application-specific token value
 	span   gorgo.Span
 }
 
@@ -120,18 +148,22 @@ func MakeDefaultToken(typ gorgo.TokType, lexeme string, span gorgo.Span) Default
 	}
 }
 
+// TokType returns the token type for a token created by a scanner.
 func (t DefaultToken) TokType() gorgo.TokType {
 	return t.kind
 }
 
+// Value returns an application-specific value for a token.
 func (t DefaultToken) Value() interface{} {
 	return t.Val
 }
 
+// Lexeme returns the string representation of an input token.
 func (t DefaultToken) Lexeme() string {
 	return t.lexeme
 }
 
+// Span denotes the extent of a token within the input stream.
 func (t DefaultToken) Span() gorgo.Span {
 	return t.span
 }
@@ -169,16 +201,4 @@ func (t *DefaultTokenizer) hasmode(m uint) bool {
 		return t.unifyStrings
 	}
 	return t.Mode&m > 0
-}
-
-// Lexeme is a helper function to receive a string from a token.
-func Lexeme(token interface{}) string {
-	switch t := token.(type) {
-	case string:
-		return t
-	case []byte:
-		return string(t)
-	default:
-		return fmt.Sprintf("%v", t)
-	}
 }

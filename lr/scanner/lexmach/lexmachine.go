@@ -80,8 +80,7 @@ func logError(e error) {
 }
 
 // NextToken is part of the Tokenizer interface.
-//
-// Warning: The current implementation will ignore the 'expected'-argument.
+// It reads the next token by matching substrings in the input stream.
 func (lms *LMScanner) NextToken() gorgo.Token {
 	tok, err, eof := lms.scanner.Next()
 	for err != nil {

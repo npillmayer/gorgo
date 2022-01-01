@@ -13,14 +13,27 @@ import (
 
 // --- Category codes --------------------------------------------------------
 
+// CatCode is a type for character category codes. Clients should define a
+// RuneCategorizer to map input characters to category codes.
 type CatCode int16
 
 const IllegalCatCode CatCode = 0
 
+// RuneCategorizer maps input characters to category codes. This is used with a
+// CatSeqReader to split the input stream into sequences of characters, where each
+// character will be in the same category.
+//
+// Sometimes it is necessary to prohibit forming sequences for certain categories.
+// For example, the MetaFont programs needs `(` characters to always be single-character
+// tokens (avoid having a token of "((("). For these cases, a RuneCategorizer should
+// use true as the second return value.
+//
 type RuneCategorizer interface {
 	Cat(r rune) (cat CatCode, isLoner bool)
 }
 
+// CatSeq marks a sequence of characters where each character has the same category code.
+// Clients will use such sequences to create small automatons to recognize input tokens.
 type CatSeq struct {
 	Cat    CatCode // catcode of all runes in this sequence
 	Length int     // length of sequence in terms of runes
@@ -28,6 +41,8 @@ type CatSeq struct {
 
 // --- Category sequence reader ----------------------------------------------
 
+// CatSeqReader is a type to split input streams into sequences of characters with the
+// same category code.
 type CatSeqReader struct {
 	isEof      bool
 	next       rune
@@ -37,6 +52,7 @@ type CatSeqReader struct {
 	writer     bytes.Buffer
 }
 
+// NewCatSeqReader creates a CatSeqReader from a given rune reader.
 func NewCatSeqReader(r io.RuneReader) *CatSeqReader {
 	csr := &CatSeqReader{
 		reader: r,
@@ -44,6 +60,11 @@ func NewCatSeqReader(r io.RuneReader) *CatSeqReader {
 	return csr
 }
 
+// Next returns the next character sequence from the underlying input stream.
+//
+// If the end of the input stream has been reached, a CatSeq with csq.Cat == io.EOF will
+// be returned.
+//
 func (rs CatSeqReader) Next(rc RuneCategorizer) (csq CatSeq, err error) {
 	var r rune
 	r, err = rs.lookahead()
@@ -73,10 +94,16 @@ func (rs CatSeqReader) Next(rc RuneCategorizer) (csq CatSeq, err error) {
 	return
 }
 
+// OutputString returns the character sequence as a string, corresponding to the
+// `csq` return value of the last call to Next.
+// Scanners usually will use aggregates of rs.OutputString and rs.Span to create a token.
 func (rs CatSeqReader) OutputString() string {
 	return rs.writer.String()
 }
 
+// ResetOutput resets the internal character collection of a CatSeqReader to the
+// empty string. This is usually called by scanners after a complete token has been
+// recognized and returned to the parser.
 func (rs *CatSeqReader) ResetOutput() {
 	if rs == nil {
 		return
@@ -85,6 +112,9 @@ func (rs *CatSeqReader) ResetOutput() {
 	rs.start = rs.end
 }
 
+// Span returns the span of the character sequence corresponding to the
+// `csq` return value of the last call to Next.
+// Scanners usually will use aggregates of rs.OutputString and rs.Span to create a token.
 func (rs CatSeqReader) Span() gorgo.Span {
 	return gorgo.Span{rs.start, rs.end}
 }
