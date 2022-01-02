@@ -18,9 +18,9 @@ own wrapper code to fit lexmachine into the scanner.Tokenizer interface.
 	init := func(lexer *lexmachine.Lexer) {
 		// initialize lexmachine with all the necessary regular expressions
 		//
-		// lexmach.Skip is a pre-defined action which ignores the scanned match
+		// lexmach.Skip      is a pre-defined action which ignores the scanned match
 		// lexmach.MakeToken is a pre-defined action which wraps a scanned match into a
-		//      gorgo.Token
+		//                   gorgo.Token
 	}
 
 Having that, clients use `NewLMAdapter` to wrap lexmachine into a scanner.Tokenizer.

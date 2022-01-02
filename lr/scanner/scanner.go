@@ -1,5 +1,9 @@
 /*
 Package scanner defines an interface for scanners to be used with parsers of package lr.
+For example, an Earley parser will have a scanner plugged into it like this:
+
+	scan := scanner.GoTokenizer(…)           // create a scanner for Go tokens
+	accept, err := earley.Parse(scan, nil)   // use it with a parser
 
 The main interface defined in package scanner is the Tokenizer. All the parsers of package
 gorgo.lr need a Tokenizer to be plugged in for reading and splitting the input stream.
@@ -21,6 +25,30 @@ We define a category for them:
 
 Then we define a RuneCategorizer which will return `RelOp` for each of input characters
 '<', '>', '=' and '!'.
+
+	func myRuneCategorizer(r rune) {
+	    …
+	    case '<', '>', '=', '!':
+	        return RelOp, false    // category 'RelOp', no loners
+	    …
+	}
+
+With this, we're set to instantiate a CatSeqReader and use it:
+
+	r := NewCatSeqReader(bufio.NewReader( ⟨my input …⟩ ))
+	for … {
+	    csq, err := r.Next(myRuneCategorizer)
+	    if csq.Cat == RelOp {    // matches ">=", "!=", "<", "=", "<=>" etc.
+	        …                    // usually identify legal ones by map-lookup
+	    }
+	}
+
+For a discussion of a real-life example for this concept, please refer to
+this blog-entry
+(https://npillmayer.github.io/GoRGO/)
+on a scanner for the MetaFont/MetaPost language.
+
+___________________________________________________________________________
 
 License
 
